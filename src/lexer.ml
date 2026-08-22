@@ -42,7 +42,9 @@ let from_file path src =
     | ':' :: tl        -> [Token.from ":" Colon r c path]         @ aux r (c+1) tl
     | (hd :: tl) as lst when isalpha hd || hd = '_' ->
        let id, tl' = consume_while lst (fun c -> isalpha c || c = '_') in
-       [Token.from id (if Kwds.iskwd id then Keyword else Identifier) r c path] @ aux r (c + String.length id) tl'
+       [Token.from id (if Kwds.iskwd id      then Keyword else
+                       if Type.is_builtin id then TypeKeyword
+                       else                       Identifier) r c path] @ aux r (c + String.length id) tl'
     | (hd :: tl) as lst when isdigit hd ->
        let num, tl' = consume_while lst isdigit in
        [Token.from num Integer_Literal r c path] @ aux r (c + String.length num) tl'

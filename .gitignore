@@ -63,3 +63,4 @@ dkms.conf
 *.o
 *.depend
 *.in
+*_build/
