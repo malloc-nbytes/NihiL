@@ -6,11 +6,13 @@ let isdigit = function
   | '0' .. '9' -> true
   | _ -> false
 
+let isalnum c = isalpha c || isdigit c
+
 let consume_while s pred =
   let rec aux s acc =
     match s with
     | [] -> acc, []
-    | hd :: tl when not @@ pred hd -> acc, tl
+    | (hd :: tl) as lst when not @@ pred hd -> acc, lst
     | hd :: tl -> aux tl @@ acc ^ Utils.string_of_char hd
   in
   aux s ""
@@ -41,7 +43,7 @@ let from_file path src =
     | ';' :: tl        -> [Token.from ";" Semicolon r c path]     @ aux r (c+1) tl
     | ':' :: tl        -> [Token.from ":" Colon r c path]         @ aux r (c+1) tl
     | (hd :: tl) as lst when isalpha hd || hd = '_' ->
-       let id, tl' = consume_while lst (fun c -> isalpha c || c = '_') in
+       let id, tl' = consume_while lst (fun c -> isalnum c || c = '_') in
        [Token.from id (if Kwds.iskwd id      then Keyword else
                        if Type.is_builtin id then TypeKeyword
                        else                       Identifier) r c path] @ aux r (c + String.length id) tl'
