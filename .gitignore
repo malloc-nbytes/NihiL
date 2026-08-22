@@ -58,3 +58,8 @@ dkms.conf
 /src/config.mk
 /src/include/config.h
 /src/bin
+*.cmi
+*.cmx
+*.o
+*.depend
+*.in
