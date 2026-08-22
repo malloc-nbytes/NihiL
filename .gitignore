@@ -64,3 +64,4 @@ dkms.conf
 *.depend
 *.in
 *_build/
+/src/main

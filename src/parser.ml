@@ -24,7 +24,35 @@ let needkw s = function
 
 let expectkw s p = let _, p = needkw s p in p
 
-let parse_expr p = failwith "parse_expr"
+let rec parse_primary_expr p =
+  let rec aux left = function
+    | {tokens = {k = Identifier;      loc; _} as hd :: tl} -> aux (Some (Expr.Identifier {node = {type_ = None; loc}; id = hd})) p
+    | {tokens = {k = Integer_Literal; loc; _} as hd :: tl} -> aux (Some (Expr.Integer    {node = {type_ = None; loc};  i = hd})) p
+    | {tokens = {k = String_Literal;  loc; _} as hd :: tl} -> aux (Some (Expr.String     {node = {type_ = None; loc};  s = hd})) p
+    | _ -> match left with | Some l -> l, p | _ -> failwith "invalid expression"
+  in aux None p
+
+and parse_additive_expr p =
+  let lhs, p = parse_primary_expr p in
+  let rec aux lhs = function
+    | {tokens = {k = (Plus|Minus); _} as hd :: tl} ->
+      let rhs, p = parse_primary_expr p in
+      let lhs = Expr.Binary {
+        node = {type_ = None; loc = Expr.get_loc lhs};
+        lhs; op = hd; rhs} in
+      aux lhs p
+    | _ -> lhs, p
+  in aux lhs p
+
+and parse_assignment_expr p =
+  let lhs, p = parse_additive_expr p in
+  match p.tokens with
+  | {k = Equals; _} as hd :: tl ->
+    let rhs, p = parse_assignment_expr p in
+    Expr.Binary {node = {type_ = None; loc = hd.loc}; lhs; op = hd; rhs}, p
+  | _ -> lhs, p
+
+and parse_expr p = parse_assignment_expr p
 
 (* TODO: Add advanced types *)
 let parse_type p =
@@ -73,6 +101,10 @@ and parse_stmt_let p =
   let p      = expect Semicolon p in
   Stmt.Vardecl {node = {loc}; id; ty; e}, p
 
+and parse_stmt_expr p =
+  let e, p = parse_expr p in
+  Stmt.Expr {node = {loc = Expr.get_loc e}; e}, p
+
 and parse_stmt_kw p =
   match p.tokens with
   | [] -> failwith "parse_stmt_kw: out of tokens"
@@ -85,7 +117,7 @@ and parse_stmt p =
   | []                    -> failwith "parse_stmt: out of tokens"
   | {k = Keyword; _} :: _ -> parse_stmt_kw p
   | {k = L_Curly; _} :: _ -> parse_stmt_blk p
-  | _                     -> parse_expr p
+  | _                     -> parse_stmt_expr p
 
 let parse_tokens (tokens : Token.t list) : Stmt.t list =
   let p = {tokens; stmts = []} in
