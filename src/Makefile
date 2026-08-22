@@ -4,7 +4,7 @@ OCAMLOPT ?= ocamlopt
 OCAMLDEP ?= ocamldep
 OCAMLFLAGS ?= -O2
 
-SOURCES := utils.ml io.ml kwds.ml location.ml token.ml grammar.ml lexer.ml main.ml
+SOURCES := utils.ml io.ml kwds.ml location.ml token.ml expr.ml stmt.ml visitor.ml lexer.ml main.ml
 MODULES := $(basename $(SOURCES))
 CMXS := $(addsuffix .cmx,$(MODULES))
 CMIS := $(addsuffix .cmi,$(MODULES))
