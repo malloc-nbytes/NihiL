@@ -10,6 +10,7 @@ type ('context, 'result) visitor =
   ; stmt_vardecl : ('context, 'result) visitor -> Stmt.vardecl -> 'result
   ; stmt_proc    : ('context, 'result) visitor -> Stmt.proc    -> 'result
   ; stmt_blk     : ('context, 'result) visitor -> Stmt.blk     -> 'result
+  ; stmt_if      : ('context, 'result) visitor -> Stmt.if_     -> 'result
   }
 
 let accept_expr (v : ('context, 'result) visitor) (expr : Expr.t) : 'result =
@@ -25,3 +26,4 @@ let accept_stmt (v : ('context, 'result) visitor) (stmt : Stmt.t) : 'result =
   | Stmt.Vardecl s -> v.stmt_vardecl v s
   | Stmt.Proc    s -> v.stmt_proc    v s
   | Stmt.Blk     s -> v.stmt_blk     v s
+  | Stmt.If      s -> v.stmt_if      v s

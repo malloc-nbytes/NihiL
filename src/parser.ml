@@ -1,6 +1,6 @@
 open Token
 
-type parser =
+type t =
   { tokens : Token.t list
   ; stmts  : Stmt.t list
   }
@@ -61,7 +61,7 @@ and parse_expr p = parse_assignment_expr p
 (* TODO: Add advanced types *)
 let parse_type p =
   let base, p = need TypeKeyword p in
-  Type.from_str base.lx, p
+  Type.from_string base.lx, p
 
 let rec parse_stmt_blk p =
   let loc, p = need_loc L_Curly p in
@@ -106,6 +106,17 @@ and parse_stmt_vardecl p =
   let p      = expect Semicolon p in
   Stmt.Vardecl {node = {loc}; id; ty; e}, p
 
+and parse_stmt_if p =
+  let loc, p   = needkw Kwds.kwd_if p in
+  let cond, p  = parse_expr p in
+  let then_, p = parse_stmt p in
+  let else_, p = match p.tokens with
+    | {lx = "else"} :: tl ->
+       let else_, p = parse_stmt {p with tokens = tl} in
+       Some else_, p
+    | _ -> None, p in
+  Stmt.If {node = {loc = loc.loc}; cond; then_; else_}, p
+
 and parse_stmt_expr p =
   let e, p = parse_expr p in
   Stmt.Expr {node = {loc = Expr.get_loc e}; e}, p
@@ -113,6 +124,7 @@ and parse_stmt_expr p =
 and parse_stmt_kw p =
   match p.tokens with
   | [] -> Err.fatal "parse_stmt_kw: out of tokens\n"
+  | {lx = "if"; _} :: _ -> parse_stmt_if p
   | {lx = "let"; _} :: _ -> parse_stmt_vardecl p
   | {lx = "proc"; _} :: _ -> parse_stmt_proc p
   | _ -> Err.fatal "parse_stmt_kw: invalid keyword\n"
@@ -124,11 +136,52 @@ and parse_stmt p =
   | {k = L_Curly; _} :: _ -> parse_stmt_blk p
   | _                     -> parse_stmt_expr p
 
-let parse tokens : Stmt.t list =
+let parse tokens : t =
   let p = {tokens; stmts = []} in
   let rec aux = function
     | {tokens = []; _} as p -> p
-    | lst ->
+    | p ->
        let s, p = parse_stmt p in
        aux {p with stmts = p.stmts @ [s]}
-  in (aux p).stmts
+  in aux p
+
+let dump (p : t) : unit =
+  let indent = ref 0 in
+  let line s = print_endline @@ String.make (!indent * 2) ' ' ^ s in
+  let with_indent f =
+    indent := !indent + 1;
+    f ();
+    indent := !indent - 1
+  in
+  let rec v =
+    { Visitor.context = indent
+    ; expr_integer = (fun _ e -> line @@ "Integer " ^ e.i.lx)
+    ; expr_string = (fun _ e -> line @@ "String " ^ e.s.lx)
+    ; expr_identifier = (fun _ e -> line @@ "Identifier " ^ e.id.lx)
+    ; expr_binary = (fun v e ->
+      line @@ "Binary " ^ e.op.lx;
+      with_indent @@ fun () ->
+                     Visitor.accept_expr v e.lhs;
+                     Visitor.accept_expr v e.rhs)
+    ; stmt_expr = (fun v s -> Visitor.accept_expr v s.e)
+    ; stmt_vardecl = (fun v s ->
+      line @@ "Vardecl " ^ s.id.lx ^ ": " ^ Type.to_string s.ty;
+      with_indent @@ fun () -> Visitor.accept_expr v s.e)
+    ; stmt_proc = (fun v s ->
+      let params = List.map (fun (id, ty) -> id.lx ^ ": " ^ Type.to_string ty) s.params in
+      line @@ (if s.export then "Export " else "") ^ "Proc " ^ s.id.lx ^
+                "(" ^ String.concat ", " params ^ "): " ^ Type.to_string s.rty;
+      with_indent @@ fun () -> Visitor.accept_stmt v s.body)
+    ; stmt_blk = (fun v s ->
+      line "Block";
+      with_indent @@ fun () -> List.iter (Visitor.accept_stmt v) s.stmts)
+    ; stmt_if = (fun v s ->
+      line "If";
+      with_indent @@ fun () ->
+        line "Condition";
+        with_indent @@ fun () -> Visitor.accept_expr v s.cond;
+        line "Then";
+        with_indent @@ fun () -> Visitor.accept_stmt v s.then_)
+    }
+  in
+  List.iter (Visitor.accept_stmt v) p.stmts

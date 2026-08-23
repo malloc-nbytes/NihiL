@@ -21,8 +21,14 @@ let size = function
   | I32 -> 4
   | Ptr _ -> 8
 
-let from_str = function
+let from_string = function
   | "void" -> Void
   | "u8" -> U8
   | "i32" -> I32
   | s -> failwith @@ Printf.sprintf "from_str: unknown type: `%s'" s
+
+let rec to_string = function
+  | Void -> "void"
+  | U8 -> "u8"
+  | I32 -> "i32"
+  | Ptr {inner} -> "*" ^ to_string inner

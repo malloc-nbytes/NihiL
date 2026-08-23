@@ -1,4 +1,5 @@
 TARGET := main
+TEST_TARGET := parser_test
 
 OCAMLOPT ?= ocamlopt
 OCAMLDEP ?= ocamldep
@@ -13,12 +14,20 @@ DEPENDENCIES := .depend
 
 .DEFAULT_GOAL := all
 
-.PHONY: all clean rebuild
+.PHONY: all clean rebuild test
 
 all: $(TARGET)
 
 $(TARGET): $(CMXS)
 	$(OCAMLOPT) $(OCAMLFLAGS) -o $@ $^
+
+$(TEST_TARGET): $(filter-out main.cmx,$(CMXS)) parser_test.cmx
+	$(OCAMLOPT) $(OCAMLFLAGS) -o $@ $^
+
+test: $(TEST_TARGET)
+	./$(TEST_TARGET)
+
+parser_test.cmx: parser.cmx lexer.cmx
 
 %.cmx: %.ml
 	$(OCAMLOPT) $(OCAMLFLAGS) -c $<
@@ -31,7 +40,7 @@ ifeq ($(filter clean rebuild,$(MAKECMDGOALS)),)
 endif
 
 clean:
-	$(RM) $(TARGET) $(CMXS) $(CMIS) $(OBJECTS) $(DEPENDENCIES)
+	$(RM) $(TARGET) $(TEST_TARGET) $(CMXS) $(CMIS) $(OBJECTS) parser_test.cmx parser_test.cmi parser_test.o $(DEPENDENCIES)
 
 rebuild: clean
 	$(MAKE) all

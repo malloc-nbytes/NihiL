@@ -3,5 +3,5 @@ let () =
   let src = Io.load_file path in
   let l = Lexer.from_file path src in
   Lexer.dump l;
-  let _ = Parser.parse l in
-  ()
+  let p = Parser.parse l in
+  Parser.dump p

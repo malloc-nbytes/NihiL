@@ -7,6 +7,7 @@ type t =
   | Vardecl of vardecl
   | Proc    of proc
   | Blk     of blk
+  | If      of if_
 
 and expr =
   { node : node
@@ -32,4 +33,11 @@ and proc =
 and blk =
   { node : node
   ; stmts: t list
+  }
+
+and if_ =
+  { node : node
+  ; cond : Expr.t
+  ; then_ : t
+  ; else_ : t option
   }
