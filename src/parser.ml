@@ -67,7 +67,7 @@ let rec parse_stmt_blk p =
   let loc, p = need_loc L_Curly p in
   let rec aux acc = function
     | {tokens = ({k = R_Curly; _}) :: tl; _} as p ->
-       Stmt.Blk {node = {loc}; stmts = List.rev acc}, p
+       Stmt.Blk {node = {loc}; stmts = List.rev acc}, {p with tokens = tl}
     | _ -> let s, p = parse_stmt p in aux (s :: acc) p
   in aux [] p
 
