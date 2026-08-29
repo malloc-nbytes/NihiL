@@ -33,7 +33,23 @@ let resolve_expr_identifier
                    node = {node with ty = ty}
                  }, v
 
-let resolve_expr_binary v e = assert false
+let resolve_expr_binary
+      (v : resolver_type)
+      ({node; lhs; op = {lx = op; k}; rhs; _} as e : Expr.binary)
+    : Expr.t * resolver_type =
+  let lhs, v = accept_expr v lhs in
+  let rhs, v = accept_expr v rhs in
+  let lty, rty = Expr.get_type lhs, Expr.get_type rhs in
+  if not @@ Type.check lty rty then
+    raise @@ Err.Incompatible_Types (Type.to_string lty, Type.to_string rty)
+  else if not @@ Type.check_binop lty k rty then
+    raise @@ Err.Incompatible_Binop_Types (Type.to_string lty, op, Type.to_string rty)
+  else
+    Expr.Binary {
+        e with
+        node = {node with ty = Expr.get_type lhs}
+      }, v
+
 let resolve_expr_unary v e = assert false
 
 let resolve_stmt_proc
@@ -125,4 +141,7 @@ let analyze stmts =
      failwith "semantic error"
   | Err.Identifier_Not_Defined id ->
      let _ = Printf.eprintf "identifier `%s' is not defined\n" id in
+     failwith "semantic error"
+  | Err.Incompatible_Binop_Types (l, op, r) ->
+     let _ = Printf.eprintf "Unsupported binary operator `%s' on types `%s' and `%s'\n" op l r in
      failwith "semantic error"

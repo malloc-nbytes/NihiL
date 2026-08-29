@@ -38,6 +38,21 @@ let rec to_string = function
 
 let rec check t t' =
   if t <> t' then false
-  else match t, t' with
-       | Ptr p, Ptr p' -> check p p'
-       | _ -> true
+  else
+    match t, t' with
+    | Ptr p, Ptr p' -> check p p'
+    | _ -> true
+
+let is_number t =
+  match t with
+  | I32 | U32 | U8 | Ptr _ -> true
+  | Undefined | Proc _ | Void -> false
+
+let check_binop t (op : Token.kind) t' =
+  let open Token in
+  if not (check t t') then false
+  else
+    match op with
+    | Plus | Minus | Asterisk | Forward_Slash ->
+       is_number t && is_number t'
+    | _ -> false
