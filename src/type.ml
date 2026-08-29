@@ -11,8 +11,17 @@ type t =
   | Undefined
 
 let is_primitive = function
-  | "void" | "i32" | "u32" | "u8" -> true
+  | "void" | "i32" | "u32" | "u8" | "undefined" -> true
   | _ -> false
+
+let size = function
+  | Void -> 0
+  | I32 -> 4
+  | U32 -> 4
+  | U8 -> 1
+  | Ptr _ -> 0
+  | Proc _ -> 0
+  | Undefined -> 0
 
 let rec to_string = function
   | Void -> "void"
