@@ -77,20 +77,41 @@ let resolve_stmt_let
     else
       Stmt.Let {s with e}, {v with context = Scope.add id s.ty scope}
 
-let resolve_stmt_expr v s = assert false
-let resolve_stmt_block v s = assert false
+let resolve_stmt_expr (v : resolver_type) ({e; _} as s : Stmt.expr)
+    : Stmt.t * resolver_type =
+  let e, v = accept_expr v e in
+  Stmt.Expr {s with e}, v
+
+let resolve_stmt_block
+      ({context = scope; _} as v : resolver_type)
+      (s : Stmt.block)
+  : Stmt.t * resolver_type =
+  let rec aux acc v = function
+    | [] -> List.rev acc, v
+    | hd :: tl ->
+       let s, v = accept_stmt v hd in
+       aux (s :: acc) v tl
+  in
+  let stmts, v = aux [] {v with context = Scope.push scope} s.stmts in
+  Stmt.Block {s with stmts}, {v with context = Scope.pop v.context}
 
 let analyze stmts =
-  let v = (Vis.{
-             context         = Scope.empty;
-             expr_integer    = resolve_expr_integer;
-             expr_string     = resolve_expr_string;
-             expr_identifier = resolve_expr_identifier;
-             expr_binary     = resolve_expr_binary;
-             expr_unary      = resolve_expr_unary;
-             stmt_proc       = resolve_stmt_proc;
-             stmt_let        = resolve_stmt_let;
-             stmt_expr       = resolve_stmt_expr;
-             stmt_block      = resolve_stmt_block;
-          }) in
-  assert false
+  let rec aux v = function
+    | [] -> []
+    | hd :: tl ->
+       let s, v = accept_stmt v hd in
+       s :: aux v tl
+  in
+  List.rev @@
+    aux (Vis.{
+          context         = Scope.empty;
+          expr_integer    = resolve_expr_integer;
+          expr_string     = resolve_expr_string;
+          expr_identifier = resolve_expr_identifier;
+          expr_binary     = resolve_expr_binary;
+          expr_unary      = resolve_expr_unary;
+          stmt_proc       = resolve_stmt_proc;
+          stmt_let        = resolve_stmt_let;
+          stmt_expr       = resolve_stmt_expr;
+          stmt_block      = resolve_stmt_block;
+      }) stmts
