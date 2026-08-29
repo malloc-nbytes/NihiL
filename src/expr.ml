@@ -44,3 +44,10 @@ let get_location = function
   | Identifier e -> e.node.loc
   | Binary e -> e.node.loc
   | Unary e -> e.node.loc
+
+let get_type = function
+  | Integer e -> e.node.ty
+  | String e -> e.node.ty
+  | Identifier e -> e.node.ty
+  | Binary e -> e.node.ty
+  | Unary e -> e.node.ty
