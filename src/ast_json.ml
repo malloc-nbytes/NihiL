@@ -17,15 +17,10 @@ let quote s =
   Buffer.add_char b '"';
   Buffer.contents b
 
-let location (loc : Location.t) =
-  "{\"path\":" ^ quote loc.path ^ ",\"line\":" ^ string_of_int loc.r ^
-  ",\"column\":" ^ string_of_int loc.c ^ "}"
-
 let type_ ty = quote (Type.to_string ty)
 
 let expr_object fields (node : Expr.node) =
-  "{" ^ fields ^ ",\"location\":" ^ location node.loc ^ ",\"type\":" ^
-  type_ node.ty ^ "}"
+  "{" ^ fields ^ ",\"type\":" ^ type_ node.ty ^ "}"
 
 let rec expr = function
   | Expr.Integer e ->
@@ -53,19 +48,15 @@ let rec stmt = function
      "{\"kind\":\"procedure\",\"export\":" ^ string_of_bool s.export ^
      ",\"name\":" ^ quote s.id.lx ^ ",\"parameters\":[" ^
      String.concat "," (List.map parameter s.params) ^ "],\"return_type\":" ^
-     type_ s.rty ^ ",\"body\":" ^ stmt s.blk ^ ",\"location\":" ^
-     location s.node.loc ^ "}"
+     type_ s.rty ^ ",\"body\":" ^ stmt s.blk ^ "}"
   | Stmt.Let s ->
-     "{\"kind\":\"let\",\"name\":" ^ quote s.id.lx ^ ",\"type\":" ^
-     type_ s.ty ^ ",\"value\":" ^ expr s.e ^ ",\"location\":" ^
-     location s.node.loc ^ "}"
+    "{\"kind\":\"let\",\"name\":" ^ quote s.id.lx ^ ",\"type\":" ^
+     type_ s.ty ^ ",\"value\":" ^ expr s.e ^ "}"
   | Stmt.Expr s ->
-     "{\"kind\":\"expression\",\"expression\":" ^ expr s.e ^
-     ",\"location\":" ^ location s.node.loc ^ "}"
+     "{\"kind\":\"expression\",\"expression\":" ^ expr s.e ^ "}"
   | Stmt.Block s ->
-     "{\"kind\":\"block\",\"statements\":[" ^
-     String.concat "," (List.map stmt s.stmts) ^ "],\"location\":" ^
-     location s.node.loc ^ "}"
+    "{\"kind\":\"block\",\"statements\":[" ^
+     String.concat "," (List.map stmt s.stmts) ^ "]}"
 
 let to_string program =
   "{\"kind\":\"program\",\"statements\":[" ^

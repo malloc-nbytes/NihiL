@@ -102,16 +102,27 @@ let analyze stmts =
        let s, v = accept_stmt v hd in
        s :: aux v tl
   in
-  List.rev @@
-    aux (Vis.{
-          context         = Scope.empty;
-          expr_integer    = resolve_expr_integer;
-          expr_string     = resolve_expr_string;
-          expr_identifier = resolve_expr_identifier;
-          expr_binary     = resolve_expr_binary;
-          expr_unary      = resolve_expr_unary;
-          stmt_proc       = resolve_stmt_proc;
-          stmt_let        = resolve_stmt_let;
-          stmt_expr       = resolve_stmt_expr;
-          stmt_block      = resolve_stmt_block;
-      }) stmts
+  try
+    List.rev @@
+      aux (Vis.{
+            context         = Scope.empty;
+            expr_integer    = resolve_expr_integer;
+            expr_string     = resolve_expr_string;
+            expr_identifier = resolve_expr_identifier;
+            expr_binary     = resolve_expr_binary;
+            expr_unary      = resolve_expr_unary;
+            stmt_proc       = resolve_stmt_proc;
+            stmt_let        = resolve_stmt_let;
+            stmt_expr       = resolve_stmt_expr;
+            stmt_block      = resolve_stmt_block;
+        }) stmts
+  with
+  | Err.Incompatible_Types (t, t') ->
+     let _ = Printf.eprintf "types `%s' and `%s' are not compatible\n" t t' in
+     failwith "semantic error"
+  | Err.Identifier_Already_Defined id ->
+     let _ = Printf.eprintf "identifier `%s' is already defined\n" id in
+     failwith "semantic error"
+  | Err.Identifier_Not_Defined id ->
+     let _ = Printf.eprintf "identifier `%s' is not defined\n" id in
+     failwith "semantic error"
