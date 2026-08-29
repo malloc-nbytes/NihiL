@@ -1,38 +1,39 @@
 type node =
-  { type_ : Type.t option
-  ; loc : Location.t
+  { loc : Location.t
+  ; ty : Type.t
   }
 
 type t =
-  | Integer    of integer
-  | String     of string_
-  | Identifier of identifier
-  | Binary     of binary
+  | Integer of integer
+  | String of string_
+  | Binary of binary
+  | Unary of unary
 
 and integer =
   { node : node
-  ; i    : Token.t
+  ; i : Token.t
   }
 
 and string_ =
   { node : node
-  ; s    : Token.t
-  }
-
-and identifier =
-  { node : node
-  ; id   : Token.t
+  ; s : Token.t
   }
 
 and binary =
   { node : node
-  ; lhs  : t
-  ; op   : Token.t
-  ; rhs  : t
+  ; lhs : t
+  ; op : Token.t
+  ; rhs : t
   }
 
-let get_loc = function
+and unary =
+  { node : node
+  ; op : Token.t
+  ; rhs : t
+  }
+
+let get_location = function
   | Integer e -> e.node.loc
   | String e -> e.node.loc
-  | Identifier e -> e.node.loc
   | Binary e -> e.node.loc
+  | Unary e -> e.node.loc

@@ -1,11 +1,12 @@
 TARGET := main
 TEST_TARGET := parser_test
+SEMANTIC_ANALYSIS_TEST_TARGET := semantic_analysis_test
 
 OCAMLOPT ?= ocamlopt
 OCAMLDEP ?= ocamldep
 OCAMLFLAGS ?= -O2
 
-SOURCES := err.ml utils.ml io.ml kwds.ml location.ml token.ml expr.ml stmt.ml visitor.ml type.ml semantic_analysis.ml parser.ml lexer.ml main.ml
+SOURCES := err.ml io.ml type.ml keyword.ml location.ml token.ml lexer.ml expr.ml stmt.ml parser.ml main.ml
 MODULES := $(basename $(SOURCES))
 CMXS := $(addsuffix .cmx,$(MODULES))
 CMIS := $(addsuffix .cmi,$(MODULES))
@@ -24,10 +25,15 @@ $(TARGET): $(CMXS)
 $(TEST_TARGET): $(filter-out main.cmx,$(CMXS)) parser_test.cmx
 	$(OCAMLOPT) $(OCAMLFLAGS) -o $@ $^
 
-test: $(TEST_TARGET)
-	./$(TEST_TARGET)
+$(SEMANTIC_ANALYSIS_TEST_TARGET): $(filter-out main.cmx,$(CMXS)) semantic_analysis_test.cmx
+	$(OCAMLOPT) $(OCAMLFLAGS) -o $@ $^
+
+test: $(SEMANTIC_ANALYSIS_TEST_TARGET)
+	./$(SEMANTIC_ANALYSIS_TEST_TARGET)
 
 parser_test.cmx: parser.cmx lexer.cmx
+
+semantic_analysis_test.cmx: semantic_analysis.cmx
 
 %.cmx: %.ml
 	$(OCAMLOPT) $(OCAMLFLAGS) -c $<
@@ -40,7 +46,7 @@ ifeq ($(filter clean rebuild,$(MAKECMDGOALS)),)
 endif
 
 clean:
-	$(RM) $(TARGET) $(TEST_TARGET) $(CMXS) $(CMIS) $(OBJECTS) parser_test.cmx parser_test.cmi parser_test.o $(DEPENDENCIES)
+	$(RM) $(TARGET) $(TEST_TARGET) $(SEMANTIC_ANALYSIS_TEST_TARGET) $(CMXS) $(CMIS) $(OBJECTS) parser_test.cmx parser_test.cmi parser_test.o semantic_analysis_test.cmx semantic_analysis_test.cmi semantic_analysis_test.o $(DEPENDENCIES)
 
 rebuild: clean
 	$(MAKE) all
