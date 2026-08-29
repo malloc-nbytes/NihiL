@@ -28,8 +28,8 @@ $(TEST_TARGET): $(filter-out main.cmx,$(CMXS)) parser_test.cmx
 $(SEMANTIC_ANALYSIS_TEST_TARGET): $(filter-out main.cmx,$(CMXS)) semantic_analysis_test.cmx
 	$(OCAMLOPT) $(OCAMLFLAGS) -o $@ $^
 
-test: $(SEMANTIC_ANALYSIS_TEST_TARGET)
-	./$(SEMANTIC_ANALYSIS_TEST_TARGET)
+test: $(TEST_TARGET)
+	./$(TEST_TARGET)
 
 parser_test.cmx: parser.cmx lexer.cmx
 

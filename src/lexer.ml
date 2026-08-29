@@ -22,8 +22,17 @@ let consume_while s pred =
   let acc, rest = aux [] s in
   (List.rev acc |> List.to_seq |> String.of_seq), rest
 
+let rec dump = function
+  | [] -> ()
+  | hd :: tl ->
+     let _ = Printf.printf "%s\n" @@ Token.to_string hd in
+     dump tl
+
 let lex path src =
   let rec aux r c acc = function
+    | [] -> List.rev acc
+    | (' ' | '\t') :: tl -> aux r (c+1) acc tl
+    | '\n' :: tl -> aux (r+1) 1 acc tl
     | '+' :: '=' :: tl -> aux r (c+1) ({lx = "+="; k = Plus_Equals; l = {r; c; path}} :: acc) tl
     | '-' :: '=' :: tl -> aux r (c+1) ({lx = "-="; k = Minus_Equals; l = {r; c; path}} :: acc) tl
     | '*' :: '=' :: tl -> aux r (c+1) ({lx = "*="; k = Asterisk_Equals; l = {r; c; path}} :: acc) tl
@@ -59,6 +68,9 @@ let lex path src =
     | '-' :: tl -> aux r (c+1) ({lx = "-"; k = Minus; l = {r; c; path}} :: acc) tl
     | '*' :: tl -> aux r (c+1) ({lx = "*"; k = Asterisk; l = {r; c; path}} :: acc) tl
     | '/' :: tl -> aux r (c+1) ({lx = "/"; k = Forward_Slash; l = {r; c; path}} :: acc) tl
+    | '"' :: tl ->
+       let lx, tl = consume_while tl (fun c -> c <> '"') in
+       aux r (c + 2 + String.length lx) ({lx; k = String_Literal; l = {r; c; path}} :: acc) tl
     | (hd :: tl) as l when isalpha hd || hd = '_' ->
        let lx, tl = consume_while l (fun c -> isalnum c || c = '_') in
        let k = match Keyword.of_string lx with
@@ -70,5 +82,5 @@ let lex path src =
     | (hd :: tl) as l when isdigit hd ->
        let lx, tl = consume_while l isdigit in
        aux r (c + String.length lx) ({lx; k = Integer_Literal; l = {r; c; path}} :: acc) tl
-    | _ -> Err.fatal ""
+    | hd :: _ -> failwith @@ "lexer error near `" ^ (String.make 1 hd) ^ "'"
   in aux 1 1 [] (String.to_seq src |> List.of_seq)

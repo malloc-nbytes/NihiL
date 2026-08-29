@@ -1,3 +1,7 @@
+open Expr
+open Stmt
+open Token
+
 type t =
   { ts : Token.t list
   ; global : bool
@@ -17,35 +21,99 @@ let expect' e p =
   | hd :: tl ->
      raise (Err.Expect (Token.kind_to_string e, Token.kind_to_string hd.k))
 
-let rec parse_primary_expr p = assert false
+let binary lhs op rhs =
+  Expr.Binary
+    { node = {loc = Expr.get_location lhs; ty = Type.Undefined}
+    ; lhs
+    ; op
+    ; rhs
+    }
+
+let rec parse_primary_expr p =
+  match p.ts with
+  | ({k = Integer_Literal; _} as i) :: ts ->
+     Integer {node = {loc = i.l; ty = Type.Undefined}; i}, {p with ts}
+  | ({k = String_Literal; _} as s) :: ts ->
+     String {node = {loc = s.l; ty = Type.Undefined}; s}, {p with ts}
+  | ({k = Identifier; _} as id) :: ts ->
+     Identifier {node = {loc = id.l; ty = Type.Undefined}; id}, {p with ts}
+  | hd :: _ ->
+     raise (Err.Expect ("primary expression", Token.kind_to_string hd.k))
+  | [] -> raise Err.Out_Of_Tokens
 
 and parse_unary_expr p =
-  let lhs, p = parse_primary_expr p in
-  assert false
+  match p.ts with
+  | ({k = (Bang | Minus); _} as op) :: ts ->
+     let rhs, p = parse_unary_expr {p with ts} in
+     Expr.Unary {node = {loc = op.l; ty = Type.Undefined}; op; rhs}, p
+  | _ -> parse_primary_expr p
 
 and parse_multiplicative_expr p =
   let lhs, p = parse_unary_expr p in
-  assert false
+  let rec aux lhs p =
+    match p.ts with
+    | {k = (Asterisk | Forward_Slash | Percent); _} as op :: ts ->
+       let rhs, p = parse_unary_expr {p with ts} in
+       aux (binary lhs op rhs) p
+    | _ -> lhs, p
+  in
+  aux lhs p
 
 and parse_additive_expr p =
   let lhs, p = parse_multiplicative_expr p in
-  assert false
+  let rec aux lhs p =
+    match p.ts with
+    | ({k = (Plus | Minus); _} as op) :: ts ->
+       let rhs, p = parse_multiplicative_expr {p with ts} in
+       aux (binary lhs op rhs) p
+    | _ -> lhs, p
+  in
+  aux lhs p
 
 and parse_equalitive_expr p =
   let lhs, p = parse_additive_expr p in
-  assert false
+  let rec aux lhs p =
+    match p.ts with
+    | ({k = (Double_Equals | Bang_Equals | Greaterthan | Greaterthan_Equals |
+             Lessthan | Lessthan_Equals); _} as op) :: ts ->
+       let rhs, p = parse_additive_expr {p with ts} in
+       aux (binary lhs op rhs) p
+    | _ -> lhs, p
+  in
+  aux lhs p
 
 and parse_logical_expr p =
   let lhs, p = parse_equalitive_expr p in
-  assert false
+  let rec aux lhs p =
+    match p.ts with
+    | ({k = (Pipe | Double_Pipe | Ampersand | Double_Ampersand); _} as op) :: ts ->
+       let rhs, p = parse_equalitive_expr {p with ts} in
+       aux (binary lhs op rhs) p
+    | _ -> lhs, p
+  in
+  aux lhs p
 
 and parse_assignment_expr p =
   let lhs, p = parse_logical_expr p in
-  assert false
+  match p.ts with
+  | ({k = (Equals | Plus_Equals | Minus_Equals | Asterisk_Equals |
+           Forward_Slash_Equals | Pipe_Equals | Ampersand_Equals |
+           Uptick_Equals | Percent_Equals); _} as op) :: ts ->
+     let rhs, p = parse_assignment_expr {p with ts} in
+     binary lhs op rhs, p
+  | _ -> lhs, p
 
 and parse_expr p = parse_assignment_expr p
 
-and parse_type p = assert false
+and parse_type p =
+  let ty, p = expect Token.Type p in
+  let ty = match ty.lx with
+    | "void" -> Type.Void
+    | "i32" -> Type.I32
+    | "u32" -> Type.U32
+    | "u8" -> Type.U8
+    | _ -> raise (Err.Expect ("primitive type", ty.lx))
+  in ty, p
 
 let rec parse_stmt p =
   match p.ts with
@@ -60,16 +128,17 @@ and parse_stmt_let p =
   let st, p = expect (Keyword Let) p in
   let loc = st.l in
   let id, p = expect Token.Identifier p in
-  let _, p = expect Token.Colon p in
+  let p = expect' Token.Colon p in
   let ty, p = parse_type p in
+  let p = expect' Token.Equals p in
   let e, p = parse_expr p in
-  let _, p = expect Token.Semicolon p in
+  let p = expect' Token.Semicolon p in
   Stmt.Let {node = {loc}; id; ty; e}, p
 
 and parse_stmt_expr p =
-  let (e : Expr.t), p = parse_expr p in
-  let _, p = expect Token.Semicolon p in
-  Stmt.Expr {node = {loc = Expr.get_location e}; e}, p
+  let e, p = parse_expr p in
+  let _, p = expect Semicolon p in
+  Expr {node = {loc = Expr.get_location e}; e}, p
 
 and parse_stmt_blk p =
   let rec aux acc p =

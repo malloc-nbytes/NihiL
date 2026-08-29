@@ -4,6 +4,7 @@ type t =
   | U32
   | U8
   | Ptr of t
+  | Undefined
 
 let is_primitive = function
   | "void" | "i32" | "u32" | "u8" -> true
@@ -15,3 +16,4 @@ let rec to_string = function
   | U32 -> "u32"
   | U8 -> "u8"
   | Ptr i -> "Ptr(" ^ to_string i ^ ")"
+  | Undefined -> "undefined"

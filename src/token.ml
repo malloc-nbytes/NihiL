@@ -90,5 +90,5 @@ let rec kind_to_string = function
   | Percent -> "Percent"
   | Percent_Equals -> "Percent_Equals"
 
-
+let to_string t = "< lx=\"" ^ t.lx ^ "\", k=" ^ kind_to_string t.k ^ ", l=" ^ Location.to_string t.l ^ " >"
 
