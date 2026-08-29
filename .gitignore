@@ -65,4 +65,5 @@ dkms.conf
 *.in
 *_build/
 /src/main
+/src/parser_test
 /src/semantic_analysis_test

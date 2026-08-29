@@ -4,6 +4,5 @@ let () =
   let l = Lexer.lex path src in
   (* let _ = Lexer.dump l in *)
   let stmts = Parser.parse l in
-  let stmts = Resolver.analyze stmts in
-  let _ = Ast_json.dump stmts in
+  let _ = Resolver.analyze stmts in
   ()

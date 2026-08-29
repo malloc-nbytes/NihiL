@@ -47,6 +47,8 @@ let resolve_expr_binary
   else
     Expr.Binary {
         e with
+        lhs;
+        rhs;
         node = {node with ty = Expr.get_type lhs}
       }, v
 
@@ -111,6 +113,29 @@ let resolve_stmt_block
   let stmts, v = aux [] {v with context = Scope.push scope} s.stmts in
   Stmt.Block {s with stmts}, {v with context = Scope.pop v.context}
 
+let resolve_stmt_return
+      (v : resolver_type)
+      ({e; _} as s : Stmt.return_)
+    : Stmt.t * resolver_type =
+  match e with
+  | None -> Stmt.Return s, v
+  | Some e ->
+     let e, v = accept_expr v e in
+     Stmt.Return {s with e = Some e}, v
+
+let resolve_stmt_if
+      (v : resolver_type)
+      ({cond; then_; else_} as s : Stmt.if_)
+    : Stmt.t * resolver_type =
+  let cond, v = accept_expr v cond in
+  let then_, v = accept_stmt v then_ in
+  let else_, v = match else_ with
+    | Some else_ ->
+       let else_, v = accept_stmt v else_ in
+       Some else_, v
+    | None -> None, v in
+  Stmt.If {s with cond; then_; else_}, v
+
 let analyze stmts =
   let rec aux v = function
     | [] -> []
@@ -131,6 +156,8 @@ let analyze stmts =
             stmt_let        = resolve_stmt_let;
             stmt_expr       = resolve_stmt_expr;
             stmt_block      = resolve_stmt_block;
+            stmt_return     = resolve_stmt_return;
+            stmt_if         = resolve_stmt_if;
         }) stmts
   with
   | Err.Incompatible_Types (t, t') ->

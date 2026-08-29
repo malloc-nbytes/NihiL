@@ -113,7 +113,13 @@ and parse_type p =
     | "u32" -> Type.U32
     | "u8" -> Type.U8
     | _ -> raise (Err.Expect ("primitive type", ty.lx))
-  in ty, p
+  in
+  let rec pointers ty p =
+    match p.ts with
+    | {k = Asterisk; _} :: ts -> pointers (Type.Ptr ty) {p with ts}
+    | _ -> ty, p
+  in
+  pointers ty p
 
 let rec parse_stmt p =
   match p.ts with
@@ -121,8 +127,23 @@ let rec parse_stmt p =
   | ({k = Keyword Export; _} :: {k = Keyword Proc; _} :: _) |
       {k = Keyword Proc; _} :: _ -> parse_stmt_proc p
   | {k = Keyword Let; _} :: _ -> parse_stmt_let p
+  | {k = Keyword If; _} :: _ -> parse_stmt_if p
   | {k = L_Curly; _} :: _ -> parse_stmt_blk p
   | _ -> parse_stmt_expr p
+
+and parse_stmt_if p =
+  let loc, p =
+    let hd, p = expect (Keyword If) p in
+    hd.l, p in
+  let cond, p = parse_expr p in
+  let then_, p = parse_stmt p in
+  let else_, p = match p.ts with
+    | {k = Keyword Else; _} :: tl ->
+       let s, p = parse_stmt {p with ts = tl} in
+       Some s, p
+    | _ -> None, p
+  in
+  Stmt.If {node = {loc}; cond; then_; else_}, p
 
 and parse_stmt_let p =
   let st, p = expect (Keyword Let) p in

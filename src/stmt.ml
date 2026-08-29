@@ -7,6 +7,8 @@ type t =
   | Let of let_
   | Expr of expr
   | Block of block
+  | Return of return_
+  | If of if_
 
 and proc =
   { node : node
@@ -32,4 +34,16 @@ and expr =
 and block =
   { node : node
   ; stmts : t list
+  }
+
+and return_ =
+  { node : node
+  ; e : Expr.t option
+  }
+
+and if_ =
+  { node : node
+  ; cond : Expr.t
+  ; then_ : t
+  ; else_ : t option
   }
