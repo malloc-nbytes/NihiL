@@ -1,56 +1,80 @@
-TARGET := main
-TEST_TARGET := scope_test
-PARSER_TEST_TARGET := parser_test
-SEMANTIC_ANALYSIS_TEST_TARGET := semantic_analysis_test
+# NOTE: run premake.py to generate config.mk
+-include config.mk
 
-OCAMLOPT ?= ocamlopt
-OCAMLDEP ?= ocamldep
-OCAMLFLAGS ?= -O2
+DEBUG_FLAGS := -O0 -g3
 
-SOURCES := err.ml io.ml type.ml keyword.ml location.ml token.ml lexer.ml expr.ml stmt.ml parser.ml scope.ml vis.ml resolver.ml main.ml
-MODULES := $(basename $(SOURCES))
-CMXS := $(addsuffix .cmx,$(MODULES))
-CMIS := $(addsuffix .cmi,$(MODULES))
-OBJECTS := $(addsuffix .o,$(MODULES))
-DEPENDENCIES := .depend
+SRCDIR := .
+OBJDIR := obj
+BINDIR := bin
+INCLUDE := include
 
-.DEFAULT_GOAL := all
+TARGET := NihiL
 
-.PHONY: all clean rebuild test
+# Find all .c files
+SOURCES := $(shell find $(SRCDIR) -type f -name '*.c')
+OBJECTS := $(patsubst $(SRCDIR)/%.c, $(OBJDIR)/%.o, $(SOURCES))
 
-all: $(TARGET)
+PREFIX ?= /usr/local
+DESTDIR ?=
 
-$(TARGET): $(CMXS)
-	$(OCAMLOPT) $(OCAMLFLAGS) -o $@ $^
+# Default target
+.PHONY: all
+all: $(BINDIR)/$(TARGET)
 
-$(TEST_TARGET): $(filter-out main.cmx,$(CMXS)) scope_test.cmx
-	$(OCAMLOPT) $(OCAMLFLAGS) -o $@ $^
+# Create directories
+$(OBJDIR) $(BINDIR):
+	mkdir -p $@
 
-$(PARSER_TEST_TARGET): $(filter-out main.cmx,$(CMXS)) parser_test.cmx
-	$(OCAMLOPT) $(OCAMLFLAGS) -o $@ $^
+# Compile .c to .o
+$(OBJDIR)/%.o: $(SRCDIR)/%.c | $(OBJDIR)
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -c $< -o $@
 
-$(SEMANTIC_ANALYSIS_TEST_TARGET): $(filter-out main.cmx,$(CMXS)) semantic_analysis_test.cmx
-	$(OCAMLOPT) $(OCAMLFLAGS) -o $@ $^
+# Link everything
+$(BINDIR)/$(TARGET): $(OBJECTS) | $(BINDIR)
+	$(CC) $(OBJECTS) $(LDFLAGS) -o $@
 
-test: $(TEST_TARGET)
-	./$(TEST_TARGET)
+.PHONY: debug
+debug: CFLAGS := $(filter-out -O2,$(CFLAGS)) $(DEBUG_FLAGS)
+debug: all
 
-scope_test.cmx: scope.cmx
+.PHONY: install
+install: all
+	install -d "$(DESTDIR)$(PREFIX)/bin"
+	install -m 755 "$(BINDIR)/$(TARGET)" "$(DESTDIR)$(PREFIX)/bin/$(TARGET)"
 
-semantic_analysis_test.cmx: semantic_analysis.cmx
+.PHONY: uninstall
+uninstall:
+	-rm -f "$(DESTDIR)$(PREFIX)/bin/$(TARGET)"
 
-%.cmx: %.ml
-	$(OCAMLOPT) $(OCAMLFLAGS) -c $<
-
-$(DEPENDENCIES): $(SOURCES)
-	$(OCAMLDEP) -native $(SOURCES) > $@
-
-ifeq ($(filter clean rebuild,$(MAKECMDGOALS)),)
--include $(DEPENDENCIES)
-endif
-
+.PHONY: clean
 clean:
-	$(RM) $(TARGET) $(TEST_TARGET) $(PARSER_TEST_TARGET) $(SEMANTIC_ANALYSIS_TEST_TARGET) $(CMXS) $(CMIS) $(OBJECTS) scope_test.cmx scope_test.cmi scope_test.o parser_test.cmx parser_test.cmi parser_test.o semantic_analysis_test.cmx semantic_analysis_test.cmi semantic_analysis_test.o $(DEPENDENCIES)
+	rm -rf $(OBJDIR) $(BINDIR)
 
-rebuild: clean
-	$(MAKE) all
+.PHONY: distclean
+distclean:
+	rm -f config.mk
+	rm -f include/config.h
+	rm -f ../*.html
+
+.PHONY: run
+run: all
+	./$(BINDIR)/$(TARGET)
+
+.PHONY: run-debug
+run-debug: debug
+	./$(BINDIR)/$(TARGET)
+
+.PHONY: help
+help:
+	@echo "Available targets:"
+	@echo "  all         - Build optimized release version (default)"
+	@echo "  debug       - Build with -O0 and full debug symbols (-g3)"
+	@echo "  run         - Build and run release version"
+	@echo "  run-debug   - Build and run debug version"
+	@echo "  clean       - Remove build artifacts"
+	@echo "  distclean   - Remove premake artifacts"
+	@echo "  help        - Show this help"
+
+# Prevent deleting intermediate files
+.PRECIOUS: $(OBJDIR)/%.o
