@@ -53,6 +53,7 @@ typedef enum {
         TOKEN_KIND_PERCENT_EQUALS,
         TOKEN_KIND_DOUBLE_PIPE,
         TOKEN_KIND_DOUBLE_AMPERSAND,
+        TOKEN_KIND_ELLIPSIS,
 } token_kind;
 
 typedef struct {

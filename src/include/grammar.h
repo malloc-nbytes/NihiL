@@ -6,6 +6,10 @@
 #include "types.h"
 #include "array.h"
 
+#define PROC_FLAG_EXPORT   (1 << 0)
+#define PROC_FLAG_EXTERN   (1 << 1)
+#define PROC_FLAG_VARIADIC (1 << 2)
+
 typedef struct visitor visitor;
 
 typedef enum {
@@ -84,10 +88,10 @@ ARRAY_DEFINE(proc_param, proc_param_ar);
 
 typedef struct {
         stmt base;
-        int export;
-        int extern_;
+        uint32_t flags;
         const token *id;
         proc_param_ar params;
+        type *ty;
         stmt_block *body; // NULL for extern
 } stmt_proc;
 
@@ -99,6 +103,6 @@ expr_binary *expr_binary_alloc(expr *lhs, const token *op, expr *rhs, arena *a);
 stmt_expr *stmt_expr_alloc(expr *e, arena *a);
 stmt_let *stmt_let_alloc(const token *id, type *ty, expr *e, location loc, arena *a);
 stmt_block *stmt_block_alloc(stmtp_ar stmts, location loc, arena *a);
-stmt_proc *stmt_proc_alloc(int export, int extern_, const token *id, proc_param_ar params, stmt_block *body, location loc, arena *a);
+stmt_proc *stmt_proc_alloc(uint32_t flags, const token *id, proc_param_ar params, type *ty, stmt_block *body, location loc, arena *a);
 
 #endif // GRAMMAR_H_INCLUDED

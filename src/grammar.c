@@ -111,10 +111,10 @@ stmt_block_alloc(stmtp_ar stmts, location loc, arena *a)
 }
 
 stmt_proc *
-stmt_proc_alloc(int            export,
-                int            extern_,
+stmt_proc_alloc(uint32_t       flags,
                 const token   *id,
                 proc_param_ar  params,
+                type          *ty,
                 stmt_block    *body,
                 location       loc,
                 arena         *a)
@@ -122,10 +122,10 @@ stmt_proc_alloc(int            export,
         stmt_proc *s;
 
         s = (stmt_proc *)arena_alloc(a, sizeof(*s));
-        s->export = export;
-        s->extern_ = extern_;
+        s->flags = flags;
         s->id = id;
         s->params = params;
+        s->ty = ty;
         s->body = body;
         s->base.k = STMT_KIND_PROC;
         s->base.loc = loc;

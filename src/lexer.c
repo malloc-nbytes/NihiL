@@ -72,6 +72,7 @@ init_lexer_translation_unit(void)
         opmap_insert(&g_opmap, "%=", TOKEN_KIND_PERCENT_EQUALS);
         opmap_insert(&g_opmap, "||", TOKEN_KIND_DOUBLE_PIPE);
         opmap_insert(&g_opmap, "&&", TOKEN_KIND_DOUBLE_AMPERSAND);
+        opmap_insert(&g_opmap, "...", TOKEN_KIND_ELLIPSIS);
 }
 
 const char *
@@ -123,6 +124,7 @@ token_kind_to_ccstr(token_kind k)
         case TOKEN_KIND_PERCENT_EQUALS: return "%=";
         case TOKEN_KIND_DOUBLE_PIPE: return "||";
         case TOKEN_KIND_DOUBLE_AMPERSAND: return "&&";
+        case TOKEN_KIND_ELLIPSIS: return "...";
         default: return "<UNKNOWN>";
         }
         // unreachable
