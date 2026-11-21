@@ -342,8 +342,16 @@ parse_proc_parameters(parser        *p,
 
                 if (!(id = expect(p, TOKEN_KIND_IDENTIFIER)))
                         return 0;
+                if (!expect(p, TOKEN_KIND_COLON))
+                        return 0;
                 if (!(ty = parse_type(p)))
                         return 0;
+
+                array_append(*o_params, ((proc_param) {
+                        .id = id,
+                        .ty = ty,
+                        .bind = NULL,
+                }));
 
                 if (lexer_peek(p->l)->k == TOKEN_KIND_COMMA)
                         lexer_discard(p->l); // ,
@@ -412,6 +420,54 @@ parse_stmt_proc(parser *p)
         return stmt_proc_alloc(flags, id, params, ty, body, begin->loc, &p->a);
 }
 
+static stmt_if *
+parse_stmt_if(parser *p)
+{
+        const token *begin;
+        expr *e;
+        stmt *then;
+        stmt *else_;
+
+        if (!(begin = expect_keyword(p, KEYWORD_IF)))
+                return NULL;
+
+        if (!(e = parse_expr(p)))
+                return NULL;
+
+        if (!(then = parse_stmt(p)))
+                return NULL;
+
+        if (lexer_peek(p->l)->k == TOKEN_KIND_KEYWORD
+            && !strcmp(sv_view(lexer_peek(p->l)->lx), KEYWORD_ELSE)) {
+                lexer_discard(p->l); // else
+                if (!(else_ = parse_stmt(p)))
+                        return NULL;
+        }
+        else
+                else_ = NULL;
+
+        return stmt_if_alloc(e, then, else_, begin->loc, &p->a);
+}
+
+static stmt_while *
+parse_stmt_while(parser *p)
+{
+        const token *begin;
+        expr *e;
+        stmt *body;
+
+        if (!(begin = expect_keyword(p, KEYWORD_WHILE)))
+               return NULL;
+
+       if (!(e = parse_expr(p)))
+               return NULL;
+
+       if (!(body = parse_stmt(p)))
+               return NULL;
+
+        return stmt_while_alloc(e, body, begin->loc, &p->a);
+}
+
 static stmt *
 parse_stmt_keyword(parser *p)
 {
@@ -424,11 +480,16 @@ parse_stmt_keyword(parser *p)
         if (!strcmp(lx, KEYWORD_LET))
                 return (stmt *)parse_stmt_let(p);
         if (!strcmp(lx, KEYWORD_PROC)
-            || strcmp(lx, KEYWORD_EXPORT)
-            || strcmp(lx, KEYWORD_EXTERN))
+            || !strcmp(lx, KEYWORD_EXPORT)
+            || !strcmp(lx, KEYWORD_EXTERN))
                 return (stmt *)parse_stmt_proc(p);
+        if (!strcmp(lx, KEYWORD_IF))
+                return (stmt *)parse_stmt_if(p);
+        if (!strcmp(lx, KEYWORD_WHILE))
+                return (stmt *)parse_stmt_while(p);
 
-        fatal("unknown keyword: `%s'\n", lx);
+        p->error = comperr_from(str_from_fmt("illegal keyword `%s'", lx), hd->loc);
+        return NULL;
 }
 
 static stmt *

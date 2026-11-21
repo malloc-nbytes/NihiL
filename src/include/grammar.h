@@ -11,6 +11,7 @@
 #define PROC_FLAG_VARIADIC (1 << 2)
 
 typedef struct visitor visitor;
+typedef struct binding binding;
 
 typedef enum {
         EXPR_KIND_INTEGER_LITERAL = 0,
@@ -25,11 +26,13 @@ typedef enum {
         STMT_KIND_BLOCK,
         STMT_KIND_PROC,
         STMT_KIND_IF,
+        STMT_KIND_WHILE,
 } stmt_kind;
 
 typedef struct expr {
         expr_kind k;
         location loc;
+        type *ty;
         void *(*accept)(struct expr *, visitor *);
 } expr;
 
@@ -46,6 +49,7 @@ typedef struct {
 typedef struct {
         expr base;
         const token *id;
+        binding *bind;
 } expr_identifier;
 
 typedef struct {
@@ -73,6 +77,7 @@ typedef struct {
         const token *id;
         type *ty;
         expr *e; // optional
+        binding *bind;
 } stmt_let;
 
 typedef struct {
@@ -83,6 +88,7 @@ typedef struct {
 typedef struct {
         const token *id;
         const type *ty;
+        binding *bind;
 } proc_param;
 
 ARRAY_DEFINE(proc_param, proc_param_ar);
@@ -94,6 +100,7 @@ typedef struct {
         proc_param_ar params;
         type *ty;
         stmt_block *body; // NULL for extern
+        binding *bind;
 } stmt_proc;
 
 typedef struct {
@@ -102,6 +109,12 @@ typedef struct {
         stmt *then;
         stmt *else_; // optional
 } stmt_if;
+
+typedef struct {
+        stmt base;
+        expr *e;
+        stmt *body;
+} stmt_while;
 
 expr_integer *expr_integer_alloc(const token *i, arena *a);
 expr_string *expr_string_alloc(const token *s, arena *a);
@@ -113,5 +126,6 @@ stmt_let *stmt_let_alloc(const token *id, type *ty, expr *e, location loc, arena
 stmt_block *stmt_block_alloc(stmtp_ar stmts, location loc, arena *a);
 stmt_proc *stmt_proc_alloc(uint32_t flags, const token *id, proc_param_ar params, type *ty, stmt_block *body, location loc, arena *a);
 stmt_if *stmt_if_alloc(expr *e, stmt *then, stmt *else_, location loc, arena *a);
+stmt_while *stmt_while_alloc(expr *e, stmt *body, location loc, arena *a);
 
 #endif // GRAMMAR_H_INCLUDED

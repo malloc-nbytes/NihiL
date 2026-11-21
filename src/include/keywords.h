@@ -5,26 +5,20 @@
 
 #define KEYWORD_IF     "if"
 #define KEYWORD_ELSE   "else"
-#define KEYWORD_WHILE  "while"
-#define KEYWORD_FOR    "for"
 #define KEYWORD_PROC   "proc"
 #define KEYWORD_EXPORT "export"
 #define KEYWORD_EXTERN "extern"
 #define KEYWORD_LET    "let"
-#define KEYWORD_PROC   "proc"
-#define KEYWORD_IF     "if"
+#define KEYWORD_WHILE  "while"
 
 #define KEYWORDS_CPL { \
         KEYWORD_IF, \
         KEYWORD_ELSE, \
-        KEYWORD_WHILE, \
-        KEYWORD_FOR, \
         KEYWORD_PROC, \
         KEYWORD_EXPORT, \
         KEYWORD_EXTERN, \
         KEYWORD_LET, \
-        KEYWORD_PROC, \
-        KEYWORD_IF, \
+        KEYWORD_WHILE, \
         NULL, \
 }
 

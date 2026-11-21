@@ -10,6 +10,7 @@ expr_integer_alloc(const token *i, arena *a)
         e->i = i;
         e->base.k = EXPR_KIND_INTEGER_LITERAL;
         e->base.loc = i->loc;
+        e->base.ty = NULL;
         e->base.accept = accept_expr_integer;
 
         return e;
@@ -24,6 +25,7 @@ expr_string_alloc(const token *s, arena *a)
         e->s = s;
         e->base.k = EXPR_KIND_STRING_LITERAL;
         e->base.loc = s->loc;
+        e->base.ty = NULL;
         e->base.accept = accept_expr_string;
 
         return e;
@@ -36,8 +38,10 @@ expr_identifier_alloc(const token *id, arena *a)
 
         e = (expr_identifier *)arena_alloc(a, sizeof(*e));
         e->id = id;
+        e->bind = NULL;
         e->base.k = EXPR_KIND_IDENTIFIER;
         e->base.loc = id->loc;
+        e->base.ty = NULL;
         e->base.accept = accept_expr_identifier;
 
         return e;
@@ -57,6 +61,7 @@ expr_binary_alloc(expr        *lhs,
         e->rhs = rhs;
         e->base.k = EXPR_KIND_BINARY;
         e->base.loc = lhs->loc;
+        e->base.ty = NULL;
         e->base.accept = accept_expr_binary;
 
         return e;
@@ -89,6 +94,7 @@ stmt_let_alloc(const token *id,
         s->id = id;
         s->ty = ty;
         s->e = e;
+        s->bind = NULL;
         s->base.k = STMT_KIND_LET;
         s->base.loc = loc;
         s->base.accept = accept_stmt_let;
@@ -127,6 +133,7 @@ stmt_proc_alloc(uint32_t       flags,
         s->params = params;
         s->ty = ty;
         s->body = body;
+        s->bind = NULL;
         s->base.k = STMT_KIND_PROC;
         s->base.loc = loc;
         s->base.accept = accept_stmt_proc;
@@ -148,6 +155,24 @@ stmt_if_alloc(expr     *e,
         s->then = then;
         s->else_ = else_;
         s->base.k = STMT_KIND_IF;
+        s->base.loc = loc;
+        s->base.accept = accept_stmt_if;
+
+        return s;
+}
+
+stmt_while *
+stmt_while_alloc(expr     *e,
+                 stmt     *body,
+                 location  loc,
+                 arena    *a)
+{
+        stmt_while *s;
+
+        s = (stmt_while *)arena_alloc(a, sizeof(*s));
+        s->e = e;
+        s->body = body;
+        s->base.k = STMT_KIND_WHILE;
         s->base.loc = loc;
         s->base.accept = accept_stmt_if;
 
