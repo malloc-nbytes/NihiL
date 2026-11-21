@@ -3,6 +3,7 @@
 
 #include "arena.h"
 #include "location.h"
+#include "mem.h"
 #include "array.h"
 #include "sv.h"
 
@@ -66,12 +67,16 @@ typedef struct {
         tokenp_ar ts;
         char *src;
         char *path;
+        size_t cursor;
         arena a;
 } lexer;
 
 void init_lexer_translation_unit(void);
 const char *token_kind_to_ccstr(token_kind k);
-lexer lex_file(const char *path, char *src);
+lexer lex_file(const char *path, MOVE(char *src));
 void lexer_dump(lexer l);
+const token *lexer_peek(const lexer *l);
+token *lexer_next(lexer *l);
+void lexer_discard(lexer *l);
 
 #endif // LEXER_H_INCLUDED

@@ -1,14 +1,29 @@
 #include "lexer.h"
+#include "parser.h"
+#include "mem.h"
 #include "types.h"
 #include "io.h"
+
+#include <stdio.h>
+
+static void
+init(void)
+{
+        init_lexer_translation_unit();
+        init_types_translation_unit();
+}
 
 int
 main(void)
 {
-        init_lexer_translation_unit();
-        init_types_translation_unit();
+        init();
+
         lexer l = lex_file("1.in", load_file("1.in"));
-        lexer_dump(l);
+        parser p = parse(MOVE(&l));
+
+        if (p.error.set) {
+                return 1;
+        }
 
         return 0;
 }

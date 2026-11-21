@@ -8,7 +8,7 @@ OBJDIR := obj
 BINDIR := bin
 INCLUDE := include
 
-TARGET := NihiL
+TARGET := nl
 
 # Find all .c files
 SOURCES := $(shell find $(SRCDIR) -type f -name '*.c')

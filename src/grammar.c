@@ -63,7 +63,7 @@ expr_binary_alloc(expr        *lhs,
 }
 
 stmt_expr *
-stmt_kind_expr_alloc(expr *e, arena *a)
+stmt_expr_alloc(expr *e, arena *a)
 {
         stmt_expr *s;
 
@@ -77,11 +77,11 @@ stmt_kind_expr_alloc(expr *e, arena *a)
 }
 
 stmt_let *
-stmt_kind_let_alloc(const token *id,
-                    type        *ty,
-                    expr        *e,
-                    location     loc,
-                    arena       *a)
+stmt_let_alloc(const token *id,
+               type        *ty,
+               expr        *e,
+               location     loc,
+               arena       *a)
 {
         stmt_let *s;
 
@@ -97,7 +97,7 @@ stmt_kind_let_alloc(const token *id,
 }
 
 stmt_block *
-stmt_kind_block_alloc(stmtp_ar stmts, location loc, arena *a)
+stmt_block_alloc(stmtp_ar stmts, location loc, arena *a)
 {
         stmt_block *s;
 

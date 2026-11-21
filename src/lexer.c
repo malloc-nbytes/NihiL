@@ -206,6 +206,29 @@ determine_sym(const char *s, size_t *len)
         return k;
 }
 
+const token *
+lexer_peek(const lexer *l)
+{
+        if (l->cursor >= l->ts.len)
+                return l->ts.data[l->ts.len-1];
+        return l->ts.data[l->cursor];
+}
+
+token *
+lexer_next(lexer *l)
+{
+        if (l->cursor >= l->ts.len)
+                return l->ts.data[l->ts.len-1];
+        return l->ts.data[l->cursor++];
+}
+
+void
+lexer_discard(lexer *l)
+{
+        if (l->cursor < l->ts.len)
+                ++l->cursor;
+}
+
 void
 lexer_dump(lexer l)
 {
@@ -217,7 +240,7 @@ lexer_dump(lexer l)
 }
 
 lexer
-lex_file(const char *path, char *src)
+lex_file(const char *path, MOVE(char *src))
 {
         lexer l;
         size_t n, i, r, c;
@@ -226,6 +249,7 @@ lex_file(const char *path, char *src)
                 .ts = array_empty(),
                 .src = src,
                 .path = NULL,
+                .cursor = 0,
                 .a = (arena) {0},
         };
 
