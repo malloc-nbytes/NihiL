@@ -1,6 +1,8 @@
 #ifndef TYPES_H_INCLUDED
 #define TYPES_H_INCLUDED
 
+#include "arena.h"
+
 #include <stddef.h>
 
 #define TYPE_VOID "void"
@@ -25,6 +27,48 @@
         TYPE_U64, \
         NULL, \
 }
+
+typedef enum {
+        TYPE_KIND_VOID = 0,
+        TYPE_KIND_I8,
+        TYPE_KIND_I16,
+        TYPE_KIND_I32,
+        TYPE_KIND_I64,
+        TYPE_KIND_U8,
+        TYPE_KIND_U16,
+        TYPE_KIND_U32,
+        TYPE_KIND_U64,
+        TYPE_KIND_PTR,
+} type_kind;
+
+typedef struct { type_kind k; } type;
+
+typedef struct { type base; } type_void;
+typedef struct { type base; } type_i8;
+typedef struct { type base; } type_i16;
+typedef struct { type base; } type_i32;
+typedef struct { type base; } type_i64;
+typedef struct { type base; } type_u8;
+typedef struct { type base; } type_u16;
+typedef struct { type base; } type_u32;
+typedef struct { type base; } type_u64;
+typedef struct {
+        type base;
+        type *to;
+} type_ptr;
+
+void init_types_translation_unit(void);
+
+type_void *type_void_alloc(void);
+type_i8 *type_i8_alloc(void);
+type_i16 *type_i16_alloc(void);
+type_i32 *type_i32_alloc(void);
+type_i64 *type_i64_alloc(void);
+type_u8 *type_u8_alloc(void);
+type_u16 *type_u16_alloc(void);
+type_u32 *type_u32_alloc(void);
+type_u64 *type_u64_alloc(void);
+type_ptr *type_ptr_alloc(type *to, arena *a);
 
 int is_type(const char *s);
 
