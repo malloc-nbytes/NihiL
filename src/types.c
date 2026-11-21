@@ -142,8 +142,9 @@ int
 type_compatible(const type *ty0,
                 const type *ty1)
 {
-        if (ty0->k < __TYPE_INTEGERS && ty1->k < __TYPE_INTEGERS)
-                return 1;
+        // TODO: After implementing type coercion, re-enable this.
+        /* if (ty0->k < __TYPE_INTEGERS && ty1->k < __TYPE_INTEGERS) */
+        /*         return 1; */
 
         if (ty0->k != ty1->k)
                 return 0;
@@ -224,9 +225,12 @@ type_to_str(const type *const ty)
                                     type_to_str(((const type_ptr *const)ty)->to));
         case TYPE_KIND_PROC: {
                 str res;
-                const type_proc *const pty;
-                str params = str_create();
-                str rty = str_create();
+                const type_proc *pty;
+                str params;
+                str rty;
+
+                pty = (const type_proc *)ty;
+                params = str_create();
 
                 for (size_t i = 0; i < pty->tys.len; ++i) {
                         if (i != 0)
@@ -239,6 +243,8 @@ type_to_str(const type *const ty)
                 if (pty->tys.len == 0)
                         str_concat(&params, "void");
 
+                rty = type_to_str(pty->ty);
+
                 res = str_from_fmt("procedure(%s): %s", params.chars, rty.chars);
                 str_destroy(&params);
                 str_destroy(&rty);
@@ -246,6 +252,6 @@ type_to_str(const type *const ty)
                 return res;
         }
         default:
-                "<unknown>";
+                return str_from("<unknown>");
         }
 }

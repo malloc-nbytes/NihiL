@@ -17,6 +17,22 @@ scope_pop(semantic_checker *checker)
         scope_destroy(old);
 }
 
+static int
+is_valid_lvalue(expr_kind k)
+{
+        return k == EXPR_KIND_IDENTIFIER;
+}
+
+static int
+operator_will_assign(token_kind k)
+{
+        return (k == TOKEN_KIND_PLUS        || k == TOKEN_KIND_PLUS_EQUALS
+                || k == TOKEN_KIND_MINUS    || k == TOKEN_KIND_MINUS_EQUALS
+                || k == TOKEN_KIND_ASTERISK || k == TOKEN_KIND_ASTERISK_EQUALS
+                || k == TOKEN_KIND_FSLASH   || k == TOKEN_KIND_FSLASH_EQUALS
+                || k == TOKEN_KIND_PERCENT  || k == TOKEN_KIND_PERCENT_EQUALS);
+}
+
 static binding *
 declare(semantic_checker *checker,
         const token      *id,
@@ -117,6 +133,36 @@ visit_expr_binary(visitor *v, expr_binary *e)
                              comperr_from(str_from_fmt("type `%s' does not implement operator `%s'",
                                                        tystr, sv_view(e->op->lx)), e->lhs->loc));
         }
+
+        if (!type_implements_operator(lhs_ty, e->op->k)) {
+                str tystr = type_to_str(rhs_ty);
+                array_append(checker->errors,
+                             comperr_from(str_from_fmt("type `%s' does not implement operator `%s'",
+                                                       tystr, sv_view(e->op->lx)), e->rhs->loc));
+        }
+
+        if (operator_will_assign(e->op->k)
+            && !is_valid_lvalue(e->lhs->k)) {
+                array_append(checker->errors,
+                             comperr_from(str_from_fmt("performing an assignment `%s' on an invalid lvalue",
+                                                       token_kind_to_ccstr(e->op->k)),
+                                         e->lhs->loc));
+        }
+
+        if (!type_compatible(lhs_ty, rhs_ty)) {
+                str lhs_ty_str = type_to_str(lhs_ty);
+                str rhs_ty_str = type_to_str(rhs_ty);
+                array_append(checker->errors,
+                             comperr_from(str_from_fmt("types `%s' and `%s' are not compatible with operator `%s'",
+                                                       lhs_ty_str, rhs_ty_str, sv_view(e->op->lx)),
+                                          e->lhs->loc));
+                str_destroy(&lhs_ty_str);
+                str_destroy(&rhs_ty_str);
+        }
+
+        e->base.ty = lhs_ty;
+
+        return (void *)e->base.ty;
 }
 
 static void *
