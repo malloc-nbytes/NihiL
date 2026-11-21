@@ -17,6 +17,49 @@ scope_pop(semantic_checker *checker)
         scope_destroy(old);
 }
 
+static binding *
+declare(semantic_checker *checker,
+        const token      *id,
+        binding_kind      k,
+        type             *ty,
+        void             *declaration)
+{
+        binding *bind;
+        const char *name;
+
+        name = sv_view(id->lx);
+
+        if (scope_lookup_local(checker->current, name)) {
+                array_append(checker->errors,
+                             comperr_from(str_from_fmt("duplicate identifier of `%s'", name),
+                                          id->loc));
+                return NULL;
+        }
+
+        bind = (binding *)arena_alloc(&checker->a, sizeof(*bind));
+        bind->k = k;
+        bind->id = id;
+        bind->ty = ty;
+        bind->declaration = declaration;
+
+        array_append(checker->bindings, bind);
+        scope_bind(checker->current, name, bind, &checker->a);
+}
+
+static binding *
+lookup(semantic_checker *checker,
+       const token      *id)
+{
+        binding *bind;
+
+        if (!(bind = (binding *)scope_lookup(checker->current, sv_view(id->lx))))
+                array_append(checker->errors,
+                             comperr_from(str_from_fmt("undeclared identifier `%s'", sv_view(id->lx)),
+                                          id->loc));
+
+        return bind;
+}
+
 static void *
 visit_expr_integer(visitor *v, expr_integer *e)
 {
