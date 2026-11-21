@@ -10,6 +10,7 @@
 #define KEYWORD_EXTERN "extern"
 #define KEYWORD_LET    "let"
 #define KEYWORD_WHILE  "while"
+#define KEYWORD_RETURN "return"
 
 #define KEYWORDS_CPL { \
         KEYWORD_IF, \
@@ -19,6 +20,7 @@
         KEYWORD_EXTERN, \
         KEYWORD_LET, \
         KEYWORD_WHILE, \
+        KEYWORD_RETURN, \
         NULL, \
 }
 

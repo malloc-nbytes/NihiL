@@ -140,6 +140,14 @@ visit_stmt_while(visitor *v, stmt_while *s)
         return NULL;
 }
 
+static void *
+visit_stmt_return(visitor *v, stmt_return *s)
+{
+        (void)v;
+        (void)s;
+        return NULL;
+}
+
 semantic_checker
 semantic_analysis(MOVE(parser *p))
 {
@@ -166,7 +174,8 @@ semantic_analysis(MOVE(parser *p))
                            visit_stmt_block,
                            visit_stmt_proc,
                            visit_stmt_if,
-                           visit_stmt_while);
+                           visit_stmt_while,
+                           visit_stmt_return);
 
         arena_init(&c.a, ARENA_DEFAULT_BLK_SIZE);
 

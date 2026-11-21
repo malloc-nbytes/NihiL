@@ -11,7 +11,8 @@ visitor_create(void                      *context,
                visit_stmt_block_sig       visit_stmt_block,
                visit_stmt_proc_sig        visit_stmt_proc,
                visit_stmt_if_sig          visit_stmt_if,
-               visit_stmt_while_sig       visit_stmt_while)
+               visit_stmt_while_sig       visit_stmt_while,
+               visit_stmt_return_sig      visit_stmt_return)
 {
         return (visitor) {
                 .context = context,
@@ -25,6 +26,7 @@ visitor_create(void                      *context,
                 .visit_stmt_proc = visit_stmt_proc,
                 .visit_stmt_if = visit_stmt_if,
                 .visit_stmt_while = visit_stmt_while,
+                .visit_stmt_return = visit_stmt_return,
         };
 }
 
@@ -105,5 +107,13 @@ accept_stmt_while(stmt *s, visitor *v)
 {
         if (v->visit_stmt_while)
                 return v->visit_stmt_while(v, (stmt_while *)s);
+        return NULL;
+}
+
+void *
+accept_stmt_return(stmt *s, visitor *v)
+{
+        if (v->visit_stmt_return)
+                return v->visit_stmt_return(v, (stmt_return *)s);
         return NULL;
 }

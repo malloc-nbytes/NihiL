@@ -178,3 +178,17 @@ stmt_while_alloc(expr     *e,
 
         return s;
 }
+
+stmt_return *
+stmt_return_alloc(expr *e, location loc, arena *a)
+{
+        stmt_return *s;
+
+        s = (stmt_return *)arena_alloc(a, sizeof(*s));
+        s->e = e;
+        s->base.k = STMT_KIND_RETURN;
+        s->base.loc = loc;
+        s->base.accept = accept_stmt_return;
+
+        return s;
+}

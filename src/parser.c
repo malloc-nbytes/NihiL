@@ -468,6 +468,24 @@ parse_stmt_while(parser *p)
         return stmt_while_alloc(e, body, begin->loc, &p->a);
 }
 
+static stmt_return *
+parse_stmt_return(parser *p)
+{
+        const token *begin;
+        expr *e;
+
+        if (!(begin = expect_keyword(p, KEYWORD_RETURN)))
+                return NULL;
+
+        if (!(e = parse_expr(p)))
+                return NULL;
+
+        if (!expect(p, TOKEN_KIND_SEMICOLON))
+                return NULL;
+
+        return stmt_return_alloc(e, begin->loc, &p->a);
+}
+
 static stmt *
 parse_stmt_keyword(parser *p)
 {
@@ -483,6 +501,8 @@ parse_stmt_keyword(parser *p)
             || !strcmp(lx, KEYWORD_EXPORT)
             || !strcmp(lx, KEYWORD_EXTERN))
                 return (stmt *)parse_stmt_proc(p);
+        if (!strcmp(lx, KEYWORD_RETURN))
+                return (stmt *)parse_stmt_return(p);
         if (!strcmp(lx, KEYWORD_IF))
                 return (stmt *)parse_stmt_if(p);
         if (!strcmp(lx, KEYWORD_WHILE))
