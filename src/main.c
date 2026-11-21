@@ -22,6 +22,7 @@ main(void)
         parser p = parse(MOVE(&l));
 
         if (p.error.set) {
+                fprintf(stderr, "%s\n", comperr_format(p.error));
                 return 1;
         }
 

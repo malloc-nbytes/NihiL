@@ -14,5 +14,6 @@ typedef struct {
 ARRAY_DEFINE(comperr, comperr_ar);
 
 comperr comperr_from(str msg, location loc);
+const char *comperr_format(comperr err);
 
 #endif // COMPERR_H_INCLUDED

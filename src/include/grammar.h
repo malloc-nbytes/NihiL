@@ -24,6 +24,7 @@ typedef enum {
         STMT_KIND_LET,
         STMT_KIND_BLOCK,
         STMT_KIND_PROC,
+        STMT_KIND_IF,
 } stmt_kind;
 
 typedef struct expr {
@@ -95,6 +96,13 @@ typedef struct {
         stmt_block *body; // NULL for extern
 } stmt_proc;
 
+typedef struct {
+        stmt base;
+        expr *e;
+        stmt *then;
+        stmt *else_; // optional
+} stmt_if;
+
 expr_integer *expr_integer_alloc(const token *i, arena *a);
 expr_string *expr_string_alloc(const token *s, arena *a);
 expr_identifier *expr_identifier_alloc(const token *id, arena *a);
@@ -104,5 +112,6 @@ stmt_expr *stmt_expr_alloc(expr *e, arena *a);
 stmt_let *stmt_let_alloc(const token *id, type *ty, expr *e, location loc, arena *a);
 stmt_block *stmt_block_alloc(stmtp_ar stmts, location loc, arena *a);
 stmt_proc *stmt_proc_alloc(uint32_t flags, const token *id, proc_param_ar params, type *ty, stmt_block *body, location loc, arena *a);
+stmt_if *stmt_if_alloc(expr *e, stmt *then, stmt *else_, location loc, arena *a);
 
 #endif // GRAMMAR_H_INCLUDED

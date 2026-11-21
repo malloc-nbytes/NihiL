@@ -12,6 +12,7 @@ typedef void *(*visit_stmt_expr_sig)(visitor *, stmt_expr *);
 typedef void *(*visit_stmt_let_sig)(visitor *, stmt_let *);
 typedef void *(*visit_stmt_block_sig)(visitor *, stmt_block *);
 typedef void *(*visit_stmt_proc_sig)(visitor *, stmt_proc *);
+typedef void *(*visit_stmt_if_sig)(visitor *, stmt_if *);
 
 typedef struct visitor {
         void *context;
@@ -25,6 +26,7 @@ typedef struct visitor {
         visit_stmt_let_sig visit_stmt_let;
         visit_stmt_block_sig visit_stmt_block;
         visit_stmt_proc_sig visit_stmt_proc;
+        visit_stmt_if_sig visit_stmt_if;
 } visitor;
 
 visitor
@@ -36,7 +38,8 @@ visitor_create(void                      *context,
                visit_stmt_expr_sig        visit_stmt_expr,
                visit_stmt_let_sig         visit_stmt_let,
                visit_stmt_block_sig       visit_stmt_block,
-               visit_stmt_proc_sig        visit_stmt_proc);
+               visit_stmt_proc_sig        visit_stmt_proc,
+               visit_stmt_if_sig          visit_stmt_if);
 
 void *accept_expr_integer(expr *e, visitor *v);
 void *accept_expr_string(expr *e, visitor *v);
@@ -47,5 +50,6 @@ void *accept_stmt_expr(stmt *s, visitor *v);
 void *accept_stmt_let(stmt *s, visitor *v);
 void *accept_stmt_block(stmt *s, visitor *v);
 void *accept_stmt_proc(stmt *s, visitor *v);
+void *accept_stmt_if(stmt *s, visitor *v);
 
 #endif // VISITOR_H_INCLUDED

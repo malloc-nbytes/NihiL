@@ -9,9 +9,10 @@
 #define KEYWORD_FOR    "for"
 #define KEYWORD_PROC   "proc"
 #define KEYWORD_EXPORT "export"
-#define KEYWORD_EXTERN "export"
+#define KEYWORD_EXTERN "extern"
 #define KEYWORD_LET    "let"
 #define KEYWORD_PROC   "proc"
+#define KEYWORD_IF     "if"
 
 #define KEYWORDS_CPL { \
         KEYWORD_IF, \
@@ -23,6 +24,7 @@
         KEYWORD_EXTERN, \
         KEYWORD_LET, \
         KEYWORD_PROC, \
+        KEYWORD_IF, \
         NULL, \
 }
 

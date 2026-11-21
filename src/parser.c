@@ -4,6 +4,7 @@
 #include "keywords.h"
 #include "error.h"
 
+#include <assert.h>
 #include <string.h>
 
 static stmt *parse_stmt(parser *p);
@@ -66,6 +67,8 @@ parse_primary_expr(parser *p)
                 break;
         }
 
+        p->error = comperr_from(str_from("invalid primary expression"), hd->loc);
+
         return NULL;
 }
 
@@ -87,9 +90,14 @@ parse_multiplicative_expr(parser *p)
 
         while (cur && (cur->k == TOKEN_KIND_ASTERISK
                         || cur->k == TOKEN_KIND_FSLASH)) {
-                token *op = lexer_next(p->l);
-                expr *rhs = parse_unary_expr(p);
-                expr_binary *bin = expr_binary_alloc(lhs, op, rhs, &p->a);
+                token *op;
+                expr *rhs;
+                expr_binary *bin;
+
+                op = lexer_next(p->l);
+                if (!(rhs = parse_unary_expr(p)))
+                        return NULL;
+                bin = expr_binary_alloc(lhs, op, rhs, &p->a);
                 bin->base.loc = lhs->loc;
                 lhs = (expr *)bin;
                 cur = lexer_peek(p->l);
@@ -109,9 +117,14 @@ parse_additive_expr(parser *p)
 
         while (cur && (cur->k == TOKEN_KIND_PLUS
                         || cur->k == TOKEN_KIND_MINUS)) {
-                token *op = lexer_next(p->l);
-                expr *rhs = parse_multiplicative_expr(p);
-                expr_binary *bin = expr_binary_alloc(lhs, op, rhs, &p->a);
+                token *op;
+                expr *rhs;
+                expr_binary *bin;
+
+                op = lexer_next(p->l);
+                if (!(rhs = parse_multiplicative_expr(p)))
+                        return NULL;
+                bin = expr_binary_alloc(lhs, op, rhs, &p->a);
                 bin->base.loc = lhs->loc;
                 lhs = (expr *)bin;
                 cur = lexer_peek(p->l);
@@ -135,9 +148,14 @@ parse_equalitive_expr(parser *p)
                         || cur->k == TOKEN_KIND_LESSTHAN_EQUALS
                         || cur->k == TOKEN_KIND_LESSTHAN
                         || cur->k == TOKEN_KIND_GREATERTHAN)) {
-                token *op = lexer_next(p->l);
-                expr *rhs = parse_additive_expr(p);
-                expr_binary *bin = expr_binary_alloc(lhs, op, rhs, &p->a);
+                token *op;
+                expr *rhs;
+                expr_binary *bin;
+
+                op = lexer_next(p->l);
+                if (!(rhs = parse_additive_expr(p)))
+                        return NULL;
+                bin = expr_binary_alloc(lhs, op, rhs, &p->a);
                 bin->base.loc = lhs->loc;
                 lhs = (expr *)bin;
                 cur = lexer_peek(p->l);
@@ -157,9 +175,14 @@ parse_logical_expr(parser *p)
 
         while (cur && (cur->k == TOKEN_KIND_DOUBLE_PIPE
                         || cur->k == TOKEN_KIND_DOUBLE_AMPERSAND)) {
-                token *op = lexer_next(p->l);
-                expr *rhs = parse_equalitive_expr(p);
-                expr_binary *bin = expr_binary_alloc(lhs, op, rhs, &p->a);
+                token *op;
+                expr *rhs;
+                expr_binary *bin;
+
+                op = lexer_next(p->l);
+                if (!(rhs = parse_equalitive_expr(p)))
+                        return NULL;
+                bin = expr_binary_alloc(lhs, op, rhs, &p->a);
                 bin->base.loc = lhs->loc;
                 lhs = (expr *)bin;
                 cur = lexer_peek(p->l);
@@ -178,8 +201,12 @@ parse_assignment_expr(parser *p)
 
         cur = lexer_peek(p->l);
         if (cur->k == TOKEN_KIND_EQUALS) {
-                token *op = lexer_next(p->l);
-                expr *rhs = parse_assignment_expr(p);
+                token *op;
+                expr *rhs;
+
+                op = lexer_next(p->l);
+                if (!(rhs = parse_assignment_expr(p)))
+                        return NULL;
                 return (expr *)expr_binary_alloc(lhs, op, rhs, &p->a);
         }
 
@@ -199,7 +226,9 @@ parse_type(parser *p)
         const char *lx;
         type *base;
 
-        hd = expect(p, TOKEN_KIND_TYPE);
+        if (!(hd = expect(p, TOKEN_KIND_TYPE)))
+                return NULL;
+
         lx = sv_view(hd->lx);
         base = NULL;
 
@@ -247,6 +276,9 @@ parse_stmt_block(parser *p)
                         return NULL;
                 array_append(stmts, s);
         }
+
+        if (!expect(p, TOKEN_KIND_RCURLY))
+                return NULL;
 
         return stmt_block_alloc(stmts, begin->loc, &p->a);
 }
@@ -339,9 +371,6 @@ parse_stmt_proc(parser *p)
         begin = NULL;
         beginlx = sv_view(lexer_peek(p->l)->lx);
         flags = 0x00000000;
-        id = NULL;
-        ty = NULL;
-        body = NULL;
 
         if (!strcmp(beginlx, KEYWORD_EXPORT)) {
                 begin = lexer_next(p->l);
@@ -367,11 +396,18 @@ parse_stmt_proc(parser *p)
         if (!parse_proc_parameters(p, &params, &flags))
                 return NULL;
 
+        if (!expect(p, TOKEN_KIND_COLON))
+                return NULL;
+
         if (!(ty = parse_type(p)))
                 return NULL;
 
-        if (!(body = parse_stmt_block(p)))
-                return NULL;
+        if ((flags & PROC_FLAG_EXTERN) == 0) {
+                if (!(body = parse_stmt_block(p)))
+                        return NULL;
+        }
+        else
+                body = NULL;
 
         return stmt_proc_alloc(flags, id, params, ty, body, begin->loc, &p->a);
 }
@@ -387,7 +423,9 @@ parse_stmt_keyword(parser *p)
 
         if (!strcmp(lx, KEYWORD_LET))
                 return (stmt *)parse_stmt_let(p);
-        if (!strcmp(lx, KEYWORD_PROC))
+        if (!strcmp(lx, KEYWORD_PROC)
+            || strcmp(lx, KEYWORD_EXPORT)
+            || strcmp(lx, KEYWORD_EXTERN))
                 return (stmt *)parse_stmt_proc(p);
 
         fatal("unknown keyword: `%s'\n", lx);

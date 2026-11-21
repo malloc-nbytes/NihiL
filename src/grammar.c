@@ -133,3 +133,23 @@ stmt_proc_alloc(uint32_t       flags,
 
         return s;
 }
+
+stmt_if *
+stmt_if_alloc(expr     *e,
+              stmt     *then,
+              stmt     *else_,
+              location  loc,
+              arena    *a)
+{
+        stmt_if *s;
+
+        s = (stmt_if *)arena_alloc(a, sizeof(*s));
+        s->e = e;
+        s->then = then;
+        s->else_ = else_;
+        s->base.k = STMT_KIND_IF;
+        s->base.loc = loc;
+        s->base.accept = accept_stmt_if;
+
+        return s;
+}
