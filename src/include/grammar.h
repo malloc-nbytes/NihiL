@@ -6,6 +6,8 @@
 #include "types.h"
 #include "array.h"
 
+typedef struct visitor visitor;
+
 typedef enum {
         EXPR_KIND_INTEGER_LITERAL = 0,
         EXPR_KIND_STRING_LITERAL,
@@ -23,6 +25,7 @@ typedef enum {
 typedef struct expr {
         expr_kind k;
         location loc;
+        void *(*accept)(struct expr *, visitor *);
 } expr;
 
 typedef struct {
@@ -50,6 +53,7 @@ typedef struct {
 typedef struct stmt {
         stmt_kind k;
         location loc;
+        void *(*accept)(struct stmt *, visitor *);
 } stmt;
 
 ARRAY_DEFINE(stmt *, stmtp_ar);
@@ -93,8 +97,8 @@ expr_identifier *expr_identifier_alloc(const token *id, arena *a);
 expr_binary *expr_binary_alloc(expr *lhs, const token *op, expr *rhs, arena *a);
 
 stmt_expr *stmt_kind_expr_alloc(expr *e, arena *a);
-stmt_let *stmt_kind_let_alloc(const token *id, type *ty, expr *e, arena *a);
-stmt_block *stmt_kind_block_alloc(stmtp_ar stmts, arena *a);
-stmt_proc *stmt_proc_alloc(int export, int extern_, const token *id, proc_param_ar params, stmt_block *body, arena *a);
+stmt_let *stmt_kind_let_alloc(const token *id, type *ty, expr *e, location loc, arena *a);
+stmt_block *stmt_kind_block_alloc(stmtp_ar stmts, location loc, arena *a);
+stmt_proc *stmt_proc_alloc(int export, int extern_, const token *id, proc_param_ar params, stmt_block *body, location loc, arena *a);
 
 #endif // GRAMMAR_H_INCLUDED
