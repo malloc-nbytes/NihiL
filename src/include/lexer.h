@@ -72,5 +72,6 @@ typedef struct {
 void init_lexer_translation_unit(void);
 const char *token_kind_to_ccstr(token_kind k);
 lexer lex_file(const char *path, char *src);
+void lexer_dump(lexer l);
 
 #endif // LEXER_H_INCLUDED

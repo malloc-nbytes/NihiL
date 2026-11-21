@@ -206,6 +206,16 @@ determine_sym(const char *s, size_t *len)
         return k;
 }
 
+void
+lexer_dump(lexer l)
+{
+        for (size_t i = 0; i < l.ts.len; ++i) {
+                const token *t = l.ts.data[i];
+                printf("<lx=%s, k=%s, ", sv_view(t->lx), token_kind_to_ccstr(t->k));
+                printf("loc=%s>\n", location_fmt(t->loc));
+        }
+}
+
 lexer
 lex_file(const char *path, char *src)
 {
