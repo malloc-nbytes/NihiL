@@ -2,6 +2,7 @@
 #define TYPES_H_INCLUDED
 
 #include "arena.h"
+#include "array.h"
 
 #include <stddef.h>
 
@@ -29,8 +30,7 @@
 }
 
 typedef enum {
-        TYPE_KIND_VOID = 0,
-        TYPE_KIND_I8,
+        TYPE_KIND_I8 = 0,
         TYPE_KIND_I16,
         TYPE_KIND_I32,
         TYPE_KIND_I64,
@@ -38,10 +38,15 @@ typedef enum {
         TYPE_KIND_U16,
         TYPE_KIND_U32,
         TYPE_KIND_U64,
+        TYPE_INTEGERS, // for comparisons
+
+        TYPE_KIND_VOID,
         TYPE_KIND_PTR,
+        TYPE_KIND_PROC,
 } type_kind;
 
 typedef struct { type_kind k; } type;
+ARRAY_DEFINE(type *, typep_ar);
 
 typedef struct { type base; } type_void;
 typedef struct { type base; } type_i8;
@@ -52,10 +57,17 @@ typedef struct { type base; } type_u8;
 typedef struct { type base; } type_u16;
 typedef struct { type base; } type_u32;
 typedef struct { type base; } type_u64;
+
 typedef struct {
         type base;
         type *to;
 } type_ptr;
+
+typedef struct {
+        type base;
+        type *ty;
+        typep_ar tys;
+} type_proc;
 
 void init_types_translation_unit(void);
 
@@ -69,6 +81,9 @@ type_u16 *type_u16_alloc(void);
 type_u32 *type_u32_alloc(void);
 type_u64 *type_u64_alloc(void);
 type_ptr *type_ptr_alloc(type *to, arena *a);
+type_proc *type_proc_alloc(type *ty, typep_ar tys, arena *a);
+
+int type_compatible(const type *ty0, const type *ty1);
 
 int is_type(const char *s);
 

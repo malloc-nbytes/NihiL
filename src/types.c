@@ -122,3 +122,50 @@ type_ptr_alloc(type *to, arena *a)
 
         return t;
 }
+
+type_proc *
+type_proc_alloc(type *ty, typep_ar tys, arena *a)
+{
+        type_proc *t;
+
+        t = (type_proc *)arena_alloc(a, sizeof(*t));
+        t->ty = ty;
+        t->tys = tys;
+        t->base.k = TYPE_KIND_PROC;
+
+        return t;
+}
+
+int
+type_compatible(const type *ty0,
+                const type *ty1)
+{
+        if (ty0->k < TYPE_INTEGERS && ty1->k < TYPE_INTEGERS)
+                return 1;
+
+        if (ty0->k != ty1->k)
+                return 0;
+
+        // ty0.k == ty1.k from here
+
+        if (ty0->k == TYPE_KIND_PTR)
+                return type_compatible(((const type_ptr *)ty0)->to,
+                                       ((const type_ptr *)ty0)->to);
+
+        if (ty0->k == TYPE_KIND_PROC) {
+                const type_proc *pty0 = (const type_proc *)ty0;
+                const type_proc *pty1 = (const type_proc *)ty1;
+
+                if (pty0->tys.len != pty1->tys.len)
+                        return 0;
+
+                for (size_t i = 0; i < pty0->tys.len; ++i) {
+                        if (!type_compatible(pty0->tys.data[i], pty1->tys.data[i]))
+                                return 0;
+                }
+
+                return type_compatible(pty0->ty, pty1->ty);
+        }
+
+        return 0;
+}
