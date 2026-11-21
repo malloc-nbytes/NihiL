@@ -1,4 +1,7 @@
 #include "semantic.h"
+#include "array.h"
+#include "comperr.h"
+#include "types.h"
 #include "visitor.h"
 
 static void
@@ -60,6 +63,8 @@ declare(semantic_checker *checker,
 
         array_append(checker->bindings, bind);
         scope_bind(checker->current, name, bind, &checker->a);
+
+        return bind;
 }
 
 static binding *
@@ -168,24 +173,47 @@ visit_expr_binary(visitor *v, expr_binary *e)
 static void *
 visit_stmt_expr(visitor *v, stmt_expr *s)
 {
-        (void)v;
-        (void)s;
+        s->e->accept(s->e, v);
+
         return NULL;
 }
 
 static void *
 visit_stmt_let(visitor *v, stmt_let *s)
 {
-        (void)v;
-        (void)s;
+        semantic_checker *checker;
+
+        checker = (semantic_checker *)v->context;
+
+        if (s->ty->k == TYPE_KIND_VOID) {
+                array_append(checker->errors,
+                             comperr_from(str_from("variables may not be of type `void'"),
+                                          s->base.loc));
+        }
+
+        type *init_ty = (type *)s->e->accept(s->e, v);
+
+        if (!type_compatible(s->ty, init_ty)) {
+                str let_tystr = type_to_str(s->ty);
+                str init_tystr = type_to_str(init_ty);
+                array_append(checker->errors, comperr_from(str_from_fmt("types `%s' and `%s' are not compatible",
+                                                                        let_tystr.chars, init_tystr.chars),
+                                                           s->base.loc));
+                str_destroy(&let_tystr);
+                str_destroy(&init_tystr);
+        }
+
+        s->bind = declare(checker, s->id, BINDING_KIND_VARIABLE, s->ty, s);
+
         return NULL;
 }
 
 static void *
 visit_stmt_block(visitor *v, stmt_block *s)
 {
-        (void)v;
-        (void)s;
+        for (size_t i = 0; i < s->stmts.len; ++i)
+                s->stmts.data[i]->accept(s->stmts.data[i], v);
+
         return NULL;
 }
 
@@ -200,16 +228,20 @@ visit_stmt_proc(visitor *v, stmt_proc *s)
 static void *
 visit_stmt_if(visitor *v, stmt_if *s)
 {
-        (void)v;
-        (void)s;
+        s->e->accept(s->e, v);
+        s->then->accept(s->then, v);
+        if (s->else_)
+                s->else_->accept(s->else_, v);
+
         return NULL;
 }
 
 static void *
 visit_stmt_while(visitor *v, stmt_while *s)
 {
-        (void)v;
-        (void)s;
+        s->e->accept(s->e, v);
+        s->body->accept(s->body, v);
+
         return NULL;
 }
 
