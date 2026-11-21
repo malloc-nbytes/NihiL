@@ -1,5 +1,7 @@
 #include "types.h"
+#include "lexer.h"
 
+#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -140,7 +142,7 @@ int
 type_compatible(const type *ty0,
                 const type *ty1)
 {
-        if (ty0->k < TYPE_INTEGERS && ty1->k < TYPE_INTEGERS)
+        if (ty0->k < __TYPE_INTEGERS && ty1->k < __TYPE_INTEGERS)
                 return 1;
 
         if (ty0->k != ty1->k)
@@ -168,4 +170,82 @@ type_compatible(const type *ty0,
         }
 
         return 0;
+}
+
+int
+type_implements_operator(const type *const ty,
+                         int               op)
+{
+        assert(op < __TOKEN_KIND_LIMIT);
+
+        token_kind k;
+
+        k = (token_kind)op;
+
+        if (k == TOKEN_KIND_PLUS        || k == TOKEN_KIND_PLUS_EQUALS
+            || k == TOKEN_KIND_MINUS    || k == TOKEN_KIND_MINUS_EQUALS
+            || k == TOKEN_KIND_ASTERISK || k == TOKEN_KIND_ASTERISK_EQUALS
+            || k == TOKEN_KIND_FSLASH   || k == TOKEN_KIND_FSLASH_EQUALS
+            || k == TOKEN_KIND_PERCENT  || k == TOKEN_KIND_PERCENT_EQUALS) {
+                return ty->k < __TYPE_INTEGERS
+                        || ty->k == TYPE_KIND_PTR;
+        }
+
+        if (k == TOKEN_KIND_EQUALS)
+                return 1;
+
+        return 0;
+}
+
+str
+type_to_str(const type *const ty)
+{
+        switch (ty->k) {
+        case TYPE_KIND_I8:
+                return str_from("i8");
+        case TYPE_KIND_I16:
+                return str_from("i16");
+        case TYPE_KIND_I32:
+                return str_from("i32");
+        case TYPE_KIND_I64:
+                return str_from("i64");
+        case TYPE_KIND_U8:
+                return str_from("u8");
+        case TYPE_KIND_U16:
+                return str_from("u16");
+        case TYPE_KIND_U32:
+                return str_from("u32");
+        case TYPE_KIND_U64:
+                return str_from("u64");
+        case TYPE_KIND_VOID:
+                return str_from("void");
+        case TYPE_KIND_PTR:
+                return str_from_fmt("ptr<%s>",
+                                    type_to_str(((const type_ptr *const)ty)->to));
+        case TYPE_KIND_PROC: {
+                str res;
+                const type_proc *const pty;
+                str params = str_create();
+                str rty = str_create();
+
+                for (size_t i = 0; i < pty->tys.len; ++i) {
+                        if (i != 0)
+                                str_concat(&params, ", ");
+                        str paramstr = type_to_str(pty->tys.data[i]);
+                        str_concat(&params, paramstr.chars);
+                        str_destroy(&paramstr);
+                }
+
+                if (pty->tys.len == 0)
+                        str_concat(&params, "void");
+
+                res = str_from_fmt("procedure(%s): %s", params.chars, rty.chars);
+                str_destroy(&params);
+                str_destroy(&rty);
+
+                return res;
+        }
+        default:
+                "<unknown>";
+        }
 }

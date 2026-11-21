@@ -54,6 +54,8 @@ typedef enum {
         TOKEN_KIND_DOUBLE_PIPE,
         TOKEN_KIND_DOUBLE_AMPERSAND,
         TOKEN_KIND_ELLIPSIS,
+
+        __TOKEN_KIND_LIMIT,
 } token_kind;
 
 typedef struct {

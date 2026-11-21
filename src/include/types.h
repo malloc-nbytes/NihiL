@@ -3,6 +3,7 @@
 
 #include "arena.h"
 #include "array.h"
+#include "str.h"
 
 #include <stddef.h>
 
@@ -38,7 +39,7 @@ typedef enum {
         TYPE_KIND_U16,
         TYPE_KIND_U32,
         TYPE_KIND_U64,
-        TYPE_INTEGERS, // for comparisons
+        __TYPE_INTEGERS, // for comparisons
 
         TYPE_KIND_VOID,
         TYPE_KIND_PTR,
@@ -83,8 +84,13 @@ type_u64 *type_u64_alloc(void);
 type_ptr *type_ptr_alloc(type *to, arena *a);
 type_proc *type_proc_alloc(type *ty, typep_ar tys, arena *a);
 
+int is_type(const char *s);
 int type_compatible(const type *ty0, const type *ty1);
 
-int is_type(const char *s);
+// Note: `op' is an `int' and not `token_kind' so as to
+//       not cause circular dependencies. The source file
+//       casts to a `token_kind'.
+int type_implements_operator(const type *const ty, int op);
+str type_to_str(const type *const ty);
 
 #endif // TYPES_H_INCLUDED
