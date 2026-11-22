@@ -1,16 +1,20 @@
+extern proc malloc(b: u32): void*;
+
 struct Point {
         x: i32,
         y: i32,
 }
 
-proc sum(a: i32, b: i32): i32
+proc f(p: Point): Point
 {
-        let s: i32 = a + b;
-        return s;
 }
 
-export proc _start(): !
+export proc _start(): i32
 {
-        let u: u8 = 3;
+        let p: Point = Point {
+                .x = 1,
+                .y = 2,
+        };
 
+        return 0;
 }

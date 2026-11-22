@@ -86,6 +86,24 @@ expr_call_alloc(expr     *lhs,
         return e;
 }
 
+expr_struct_literal *
+expr_struct_literal_alloc(const token          *for_,
+                          struct_literal_kv_ar  setters,
+                          arena                *a)
+{
+        expr_struct_literal *e;
+
+        e = (expr_struct_literal *)arena_alloc(a, sizeof(*e));
+        e->for_ = for_;
+        e->setters = setters;
+        e->base.k = EXPR_KIND_STRUCT_LITERAL;
+        e->base.loc = for_->loc;
+        e->base.ty = NULL;
+        e->base.accept = accept_expr_struct_literal;
+
+        return e;
+}
+
 stmt_expr *
 stmt_expr_alloc(expr *e, arena *a)
 {

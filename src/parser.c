@@ -305,6 +305,8 @@ parse_type(parser *p)
                         base = (type *)type_i32_alloc();
                 else if (!strcmp(lx, TYPE_U8))
                         base = (type *)type_u8_alloc();
+                else if (!strcmp(lx, TYPE_U32))
+                        base = (type *)type_u32_alloc();
                 else
                         fatal("unhandled type");
         }
@@ -622,6 +624,24 @@ parse_stmt_struct(parser *p)
         return stmt_struct_alloc(id, members, begin->loc, &p->a);
 }
 
+static stmt_exit *
+parse_stmt_exit(parser *p)
+{
+        const token *begin;
+        expr *e;
+
+        if (!(begin = expect_keyword(p, KEYWORD_EXIT)))
+                return NULL;
+
+        if (!(e = parse_expr(p)))
+                return NULL;
+
+        if (!expect(p, TOKEN_KIND_SEMICOLON))
+                return NULL;
+
+        return stmt_exit_alloc(e, begin->loc, &p->a);
+}
+
 static stmt *
 parse_stmt_keyword(parser *p)
 {
@@ -645,6 +665,8 @@ parse_stmt_keyword(parser *p)
                 return (stmt *)parse_stmt_while(p);
         if (!strcmp(lx, KEYWORD_STRUCT))
                 return (stmt *)parse_stmt_struct(p);
+        if (!strcmp(lx, KEYWORD_EXIT))
+                return (stmt *)parse_stmt_exit(p);
 
         p->error = comperr_from(str_from_fmt("illegal keyword `%s'", lx), hd->loc);
         return NULL;

@@ -355,6 +355,13 @@ visit_expr_call(visitor *v, expr_call *e)
 }
 
 static void *
+visit_expr_struct_literal(visitor *v, expr_struct_literal *e)
+{
+        assert(0 && v && e);
+        return NULL;
+}
+
+static void *
 visit_stmt_expr(visitor *v, stmt_expr *s)
 {
         s->e->accept(s->e, v);
@@ -519,10 +526,17 @@ visit_stmt_return(visitor *v, stmt_return *s)
 
         if (!checker->expected_type) {
                 array_append(checker->errors,
-                             comperr_from(str_from("return statemesnt outside a procedure"),
+                             comperr_from(str_from("return statement outside a procedure"),
                                           s->base.loc));
                 if (s->e)
                         s->e->accept(s->e, v);
+                return NULL;
+        }
+
+        if (checker->expected_type->k == TYPE_KIND_NEVER) {
+                array_append(checker->errors,
+                             comperr_from(str_from("cannot return from a `never' function"),
+                                          s->base.loc));
                 return NULL;
         }
 
@@ -600,7 +614,19 @@ visit_stmt_struct(visitor *v, stmt_struct *s)
 static void *
 visit_stmt_exit(visitor *v, stmt_exit *s)
 {
-        assert(0 && v && s && "unimplemented");
+        semantic_checker *checker;
+
+        checker = (semantic_checker *)v->context;
+
+        if (!checker->expected_type) {
+                array_append(checker->errors,
+                             comperr_from(str_from("exit statement outside a procedure"),
+                                          s->base.loc));
+        }
+
+        if (s->e)
+                s->e->accept(s->e, v);
+
         return NULL;
 }
 
@@ -630,6 +656,7 @@ semantic_analysis(MOVE(parser *p))
                            visit_expr_identifier,
                            visit_expr_binary,
                            visit_expr_call,
+                           visit_expr_struct_literal,
                            visit_stmt_expr,
                            visit_stmt_let,
                            visit_stmt_block,

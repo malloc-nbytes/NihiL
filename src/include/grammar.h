@@ -19,6 +19,7 @@ typedef enum {
         EXPR_KIND_IDENTIFIER,
         EXPR_KIND_BINARY,
         EXPR_KIND_CALL,
+        EXPR_KIND_STRUCT_LITERAL,
 } expr_kind;
 
 typedef enum {
@@ -70,6 +71,19 @@ typedef struct {
         expr *lhs;
         exprp_ar exprs;
 } expr_call;
+
+typedef struct {
+        const token *id;
+        expr *e;
+} struct_literal_kv;
+
+ARRAY_DEFINE(struct_literal_kv, struct_literal_kv_ar);
+
+typedef struct {
+        expr base;
+        const token *for_;
+        struct_literal_kv_ar setters;
+} expr_struct_literal;
 
 typedef struct stmt {
         stmt_kind k;
@@ -159,6 +173,7 @@ expr_string *expr_string_alloc(const token *s, arena *a);
 expr_identifier *expr_identifier_alloc(const token *id, arena *a);
 expr_binary *expr_binary_alloc(expr *lhs, const token *op, expr *rhs, arena *a);
 expr_call *expr_call_alloc(expr *lhs, exprp_ar exprs, arena *a);
+expr_struct_literal *expr_struct_literal_alloc(const token *for_, struct_literal_kv_ar setters, arena *a);
 
 stmt_expr *stmt_expr_alloc(expr *e, arena *a);
 stmt_let *stmt_let_alloc(const token *id, type *ty, expr *e, location loc, arena *a);
