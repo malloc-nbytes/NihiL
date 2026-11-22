@@ -86,10 +86,49 @@ parse_primary_expr(parser *p)
 }
 
 static expr *
+parse_call_expr(parser *p)
+{
+        expr *lhs;
+
+        if (!(lhs = parse_primary_expr(p)))
+                return NULL;
+
+        while (lexer_peek(p->l)->k == TOKEN_KIND_LPAREN) {
+                exprp_ar exprs = array_empty();
+
+                lexer_discard(p->l); // (
+
+                if (lexer_peek(p->l)->k != TOKEN_KIND_RPAREN
+                    && lexer_peek(p->l)->k != TOKEN_KIND_EOF) {
+                        while (1) {
+                                expr *arg;
+
+                                if (!(arg = parse_expr(p)))
+                                        return NULL;
+
+                                array_append(exprs, arg);
+
+                                if (lexer_peek(p->l)->k != TOKEN_KIND_COMMA)
+                                        break;
+
+                                lexer_discard(p->l); // ,
+                        }
+                }
+
+                if (!expect(p, TOKEN_KIND_RPAREN))
+                        return NULL;
+
+                lhs = (expr *)expr_call_alloc(lhs, exprs, &p->a);
+        }
+
+        return lhs;
+}
+
+static expr *
 parse_unary_expr(parser *p)
 {
         // TODO
-        return parse_primary_expr(p);
+        return parse_call_expr(p);
 }
 
 static expr *
@@ -268,6 +307,9 @@ parse_stmt_expr(parser *p)
         expr *e;
 
         if (!(e = parse_expr(p)))
+                return NULL;
+
+        if (!expect(p, TOKEN_KIND_SEMICOLON))
                 return NULL;
 
         return stmt_expr_alloc(e, &p->a);

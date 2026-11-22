@@ -216,10 +216,77 @@ visit_expr_binary(visitor *v, expr_binary *e)
 static void *
 visit_expr_call(visitor *v, expr_call *e)
 {
-        (void)v;
-        (void)e;
-        assert(0);
-        return NULL;
+        semantic_checker *checker;
+        type *callee_ty;
+        type_proc *proc_ty;
+        size_t fixed_count;
+
+        checker = (semantic_checker *)v->context;
+        callee_ty = (type *)e->lhs->accept(e->lhs, v);
+
+        if (callee_ty->k != TYPE_KIND_PROC) {
+                str callee_tystr;
+
+                callee_tystr = type_to_str(callee_ty);
+
+                array_append(checker->errors,
+                             comperr_from(str_from_fmt("cannot call expression of type `%s'",
+                                                       callee_tystr.chars),
+                                          e->lhs->loc));
+                str_destroy(&callee_tystr);
+
+                for (size_t i = 0; i < e->exprs.len; ++i)
+                        e->exprs.data[i]->accept(e->exprs.data[i], v);
+
+                e->base.ty = (type *)type_void_alloc();
+                return (void *)e->base.ty;
+        }
+
+        proc_ty = (type_proc *)callee_ty;
+        fixed_count = proc_ty->tys.len;
+
+        if (e->exprs.len < fixed_count
+            || (!proc_ty->variadic && e->exprs.len != fixed_count)) {
+                array_append(checker->errors,
+                             comperr_from(str_from_fmt("procedure expects %zu argument%s but got %zu",
+                                                       fixed_count,
+                                                       fixed_count == 1 ? "" : "s",
+                                                       e->exprs.len),
+                                          e->base.loc));
+        }
+
+        for (size_t i = 0; i < e->exprs.len; ++i) {
+                type *expected_ty;
+                type *actual_ty;
+
+                expected_ty = i < fixed_count
+                        ? proc_ty->tys.data[i]
+                        : NULL;
+
+                actual_ty = visit_expr_expected(v, e->exprs.data[i], expected_ty);
+
+                if (expected_ty && !type_compatible(expected_ty, actual_ty)) {
+                        str expected_tystr;
+                        str actual_tystr;
+
+                        expected_tystr = type_to_str(expected_ty);
+                        actual_tystr = type_to_str(actual_ty);
+
+                        array_append(checker->errors,
+                                     comperr_from(str_from_fmt("argument %zu has type `%s' but parameter has type `%s'",
+                                                               i+1,
+                                                               actual_tystr.chars,
+                                                               expected_tystr.chars),
+                                                  e->exprs.data[i]->loc));
+
+                        str_destroy(&expected_tystr);
+                        str_destroy(&actual_tystr);
+                }
+        }
+
+        e->base.ty = proc_ty->ty;
+
+        return (void *)e->base.ty;
 }
 
 static void *
