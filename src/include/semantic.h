@@ -12,6 +12,7 @@ typedef enum {
         BINDING_KIND_VARIABLE = 0,
         BINDING_KIND_PROCEDURE,
         BINDING_KIND_PARAMETER,
+        BINDING_KIND_TYPE,
 } binding_kind;
 
 typedef struct binding {

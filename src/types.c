@@ -1,5 +1,6 @@
 #include "types.h"
 #include "lexer.h"
+#include "grammar.h"
 
 #include <assert.h>
 #include <stdlib.h>
@@ -139,6 +140,32 @@ type_proc_alloc(type *ty, typep_ar tys, int variadic, arena *a)
         return t;
 }
 
+type_struct *
+type_struct_alloc(stmt_struct *declaration,
+                  arena       *a)
+{
+        type_struct *t;
+
+        t = (type_struct *)arena_alloc(a, sizeof(*t));
+        t->declaration = declaration;
+        t->base.k = TYPE_KIND_STRUCT;
+
+        return t;
+}
+
+type_named *
+type_named_alloc(const token *id,
+                 arena       *a)
+{
+        type_named *t;
+
+        t = (type_named *)arena_alloc(a, sizeof(*t));
+        t->id = id;
+        t->base.k = TYPE_KIND_NAMED;
+
+        return t;
+}
+
 int
 type_compatible(const type *ty0,
                 const type *ty1)
@@ -150,7 +177,13 @@ type_compatible(const type *ty0,
         if (ty0->k != ty1->k)
                 return 0;
 
+        if (ty0->k == TYPE_KIND_STRUCT)
+                return ty0 == ty1;
+
         // ty0.k == ty1.k from here
+
+        if (ty0->k == TYPE_KIND_NAMED)
+                return ty0 == ty1;
 
         if (ty0->k == TYPE_KIND_PTR)
                 return type_compatible(((const type_ptr *)ty0)->to,
@@ -260,6 +293,10 @@ type_to_str(const type *const ty)
 
                 return res;
         }
+        case TYPE_KIND_STRUCT:
+                return str_from(sv_view(((const type_struct *)ty)->declaration->id->lx));
+        case TYPE_KIND_NAMED:
+                return str_from(sv_view(((const type_named *)ty)->id->lx));
         default:
                 return str_from("<unknown>");
         }

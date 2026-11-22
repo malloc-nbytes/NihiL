@@ -241,6 +241,14 @@ lexer_dump(lexer l)
         }
 }
 
+int
+tokens_equal(const token *const t0,
+             const token *const t1)
+{
+        return t0->lx.len == t1->lx.len
+                && !memcmp(t0->lx.s, t1->lx.s, t0->lx.len);
+}
+
 lexer
 lex_file(const char *path, MOVE(char *src))
 {

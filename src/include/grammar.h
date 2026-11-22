@@ -140,11 +140,12 @@ typedef struct {
 
 ARRAY_DEFINE(struct_member, struct_member_ar);
 
-typedef struct {
+typedef struct stmt_struct {
         stmt base;
         const token *id;
         struct_member_ar members;
         binding *bind;
+        type_struct *ty;
 } stmt_struct;
 
 expr_integer *expr_integer_alloc(const token *i, arena *a);

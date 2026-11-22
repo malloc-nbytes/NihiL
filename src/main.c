@@ -19,7 +19,7 @@ main(void)
 {
         init();
 
-        lexer l = lex_file("1.in", load_file("1.in"));
+        lexer l = lex_file("1.nl", load_file("1.nl"));
         parser p = parse(MOVE(&l));
 
         if (p.error.set) {

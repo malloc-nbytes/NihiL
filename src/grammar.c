@@ -223,6 +223,8 @@ stmt_struct_alloc(const token      *id,
         s = (stmt_struct *)arena_alloc(a, sizeof(*s));
         s->id = id;
         s->members = members;
+        s->bind = NULL;
+        s->ty = NULL;
         s->base.k = STMT_KIND_STRUCT;
         s->base.loc = loc;
         s->base.accept = accept_stmt_struct;

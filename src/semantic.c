@@ -5,6 +5,7 @@
 #include "visitor.h"
 
 #include <assert.h>
+#include <string.h>
 
 static void
 scope_push(semantic_checker *checker)
@@ -74,6 +75,34 @@ declare(semantic_checker *checker,
 }
 
 static binding *
+lookup_type(semantic_checker *checker,
+            const token      *id)
+{
+        binding *bind;
+
+        bind = (binding *)scope_lookup(checker->current,
+                                       sv_view(id->lx));
+
+        if (!bind) {
+                array_append(checker->errors,
+                             comperr_from(str_from_fmt("undeclared type `%s'",
+                                                       sv_view(id->lx)),
+                                          id->loc));
+                return NULL;
+        }
+
+        if (bind->k != BINDING_KIND_TYPE) {
+                array_append(checker->errors,
+                             comperr_from(str_from_fmt("`%s' is not a type",
+                                                       sv_view(id->lx)),
+                                          id->loc));
+                return NULL;
+        }
+
+        return bind;
+}
+
+static binding *
 lookup(semantic_checker *checker,
        const token      *id)
 {
@@ -117,6 +146,35 @@ is_integer_type(const type *ty)
                 && ty->k < __TYPE_INTEGERS;
 }
 
+static type *
+resolve_type(semantic_checker *checker,
+             type             *ty,
+             location          loc)
+{
+        if (ty->k == TYPE_KIND_PTR) {
+                type_ptr *ptr;
+
+                ptr = (type_ptr *)ty;
+                ptr->to = resolve_type(checker, ptr->to, loc);
+                return ty;
+        }
+
+        if (ty->k == TYPE_KIND_NAMED) {
+                type_named *named;
+                binding *bind;
+
+                named = (type_named *)ty;
+                bind = lookup_type(checker, named->id);
+
+                if (!bind)
+                        return (type *)type_void_alloc();
+
+                return bind->ty;
+        }
+
+        return ty;
+}
+
 static void *
 visit_expr_integer(visitor *v, expr_integer *e)
 {
@@ -154,6 +212,13 @@ visit_expr_identifier(visitor *v, expr_identifier *e)
 
         if (!(bind = lookup(checker, e->id)))
                 e->base.ty = (type *)type_void_alloc();
+        else if (bind->k == BINDING_KIND_TYPE) {
+                array_append(checker->errors,
+                             comperr_from(str_from_fmt("type `%s' used as a value",
+                                                       sv_view(e->id->lx)),
+                                          e->id->loc));
+                e->base.ty = (type *)type_void_alloc();
+        }
         else
                 e->base.ty = bind->ty;
 
@@ -304,6 +369,8 @@ visit_stmt_let(visitor *v, stmt_let *s)
 
         checker = (semantic_checker *)v->context;
 
+        s->ty = resolve_type(checker, s->ty, s->id->loc);
+
         if (s->ty->k == TYPE_KIND_VOID) {
                 array_append(checker->errors,
                              comperr_from(str_from("variables may not be of type `void'"),
@@ -357,6 +424,15 @@ visit_stmt_proc(visitor *v, stmt_proc *s)
 
         checker = (semantic_checker *)v->context;
         param_tys = array_empty_explicit(typep_ar);
+
+        s->ty = resolve_type(checker, s->ty, s->id->loc);
+
+        for (size_t i = 0; i < s->params.len; ++i) {
+                proc_param *param;
+
+                param = &s->params.data[i];
+                param->ty = resolve_type(checker, param->ty, param->id->loc);
+        }
 
         for (size_t i = 0; i < s->params.len; ++i)
                 array_append(param_tys, (type *)s->params.data[i].ty);
@@ -482,7 +558,42 @@ visit_stmt_return(visitor *v, stmt_return *s)
 static void *
 visit_stmt_struct(visitor *v, stmt_struct *s)
 {
-        assert(v && s && 0 && "unimplemented");
+        semantic_checker *checker;
+
+        checker = (semantic_checker *)v->context;
+
+        s->ty = type_struct_alloc(s, &checker->a);
+        s->bind = declare(checker, s->id, BINDING_KIND_TYPE, (type *)s->ty, s);
+
+        for (size_t i = 0; i < s->members.len; ++i) {
+                struct_member *member;
+
+                member = &s->members.data[i];
+                member->ty = resolve_type(checker, member->ty, member->id->loc);
+
+                if (member->ty->k == TYPE_KIND_VOID) {
+                        array_append(checker->errors,
+                                     comperr_from(str_from("structure members may not be of type `void'"),
+                                                  member->id->loc));
+                }
+
+                if (member->ty == (type *)s->ty) {
+                        array_append(checker->errors,
+                                     comperr_from(str_from("cannot have a structure of infinite size"),
+                                                  member->id->loc));
+                }
+
+                for (size_t j = 0; j < i; ++j) {
+                        if (tokens_equal(member->id, s->members.data[j].id)) {
+                                array_append(checker->errors,
+                                             comperr_from(str_from_fmt("duplicate member `%s'",
+                                                                       sv_view(member->id->lx)),
+                                                          member->id->loc));
+                                break;
+                        }
+                }
+        }
+
         return NULL;
 }
 

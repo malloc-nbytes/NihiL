@@ -58,7 +58,7 @@ typedef enum {
         __TOKEN_KIND_LIMIT,
 } token_kind;
 
-typedef struct {
+typedef struct token {
         sv lx;
         token_kind k;
         location loc;
@@ -81,5 +81,6 @@ void lexer_dump(lexer l);
 const token *lexer_peek(const lexer *l);
 token *lexer_next(lexer *l);
 void lexer_discard(lexer *l);
+int tokens_equal(const token *const t0, const token *const t1);
 
 #endif // LEXER_H_INCLUDED

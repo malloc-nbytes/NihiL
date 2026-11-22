@@ -44,6 +44,8 @@ typedef enum {
         TYPE_KIND_VOID,
         TYPE_KIND_PTR,
         TYPE_KIND_PROC,
+        TYPE_KIND_STRUCT,
+        TYPE_KIND_NAMED,
 } type_kind;
 
 typedef struct { type_kind k; } type;
@@ -71,6 +73,18 @@ typedef struct {
         int variadic;
 } type_proc;
 
+typedef struct stmt_struct stmt_struct;
+typedef struct {
+        type base;
+        stmt_struct *declaration;
+} type_struct;
+
+typedef struct token token;
+typedef struct {
+        type base;
+        const token *id;
+} type_named;
+
 void init_types_translation_unit(void);
 
 type_void *type_void_alloc(void);
@@ -84,6 +98,8 @@ type_u32 *type_u32_alloc(void);
 type_u64 *type_u64_alloc(void);
 type_ptr *type_ptr_alloc(type *to, arena *a);
 type_proc *type_proc_alloc(type *ty, typep_ar tys, int variadic, arena *a);
+type_struct *type_struct_alloc(stmt_struct *declaration, arena *a);
+type_named *type_named_alloc(const token *id, arena *a);
 
 int is_type(const char *s);
 int type_compatible(const type *ty0, const type *ty1);

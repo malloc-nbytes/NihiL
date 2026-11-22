@@ -274,24 +274,29 @@ parse_expr(parser *p)
 static type *
 parse_type(parser *p)
 {
-        token *hd;
+        const token *hd;
         const char *lx;
         type *base;
 
-        if (!(hd = expect(p, TOKEN_KIND_TYPE)))
-                return NULL;
+        if (lexer_peek(p->l)->k == TOKEN_KIND_IDENTIFIER) {
+                hd = lexer_next(p->l);
+                base = (type *)type_named_alloc(hd, &p->a);
+        } else {
+                if (!(hd = expect(p, TOKEN_KIND_TYPE)))
+                        return NULL;
 
-        lx = sv_view(hd->lx);
-        base = NULL;
+                lx = sv_view(hd->lx);
+                base = NULL;
 
-        if (!strcmp(lx, TYPE_VOID))
-                base = (type *)type_void_alloc();
-        else if (!strcmp(lx, TYPE_I32))
-                base = (type *)type_i32_alloc();
-        else if (!strcmp(lx, TYPE_U8))
-                base = (type *)type_u8_alloc();
-        else
-                fatal("unhandled type");
+                if (!strcmp(lx, TYPE_VOID))
+                        base = (type *)type_void_alloc();
+                else if (!strcmp(lx, TYPE_I32))
+                        base = (type *)type_i32_alloc();
+                else if (!strcmp(lx, TYPE_U8))
+                        base = (type *)type_u8_alloc();
+                else
+                        fatal("unhandled type");
+        }
 
         while (lexer_peek(p->l)->k == TOKEN_KIND_ASTERISK) {
                 lexer_discard(p->l);
@@ -551,6 +556,8 @@ static int
 parse_struct_members(parser           *p,
                      struct_member_ar *o_members)
 {
+        *o_members = array_empty_explicit(struct_member_ar);
+
         if (!expect(p, TOKEN_KIND_LCURLY))
                 return 0;
 
