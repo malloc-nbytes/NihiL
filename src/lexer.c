@@ -209,6 +209,14 @@ determine_sym(const char *s, size_t *len)
 }
 
 const token *
+lexer_peekn(const lexer *l, size_t n)
+{
+        if (l->cursor+n >= l->ts.len)
+                return l->ts.data[l->ts.len-1];
+        return l->ts.data[l->cursor+n];
+}
+
+const token *
 lexer_peek(const lexer *l)
 {
         if (l->cursor >= l->ts.len)

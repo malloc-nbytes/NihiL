@@ -48,16 +48,68 @@ expect_keyword(parser *p, const char *kw)
         return lexer_next(p->l);
 }
 
+static int
+parse_struct_literal_kv(parser               *p,
+                        struct_literal_kv_ar *o_setters)
+{
+        *o_setters = array_empty_explicit(struct_literal_kv_ar);
+
+        if (!expect(p, TOKEN_KIND_LCURLY))
+                return 0;
+
+        while (lexer_peek(p->l)->k != TOKEN_KIND_RCURLY
+               && lexer_peek(p->l)->k != TOKEN_KIND_EOF) {
+                const token *id;
+                expr *e;
+
+                if (!expect(p, TOKEN_KIND_PERIOD))
+                        return 0;
+                if (!(id = expect(p, TOKEN_KIND_IDENTIFIER)))
+                        return 0;
+                if (!expect(p, TOKEN_KIND_EQUALS))
+                        return 0;
+                if (!(e = parse_expr(p)))
+                        return 0;
+
+                array_append(*o_setters, ((struct_literal_kv) {
+                        .id = id,
+                        .e = e,
+                }));
+
+                if (lexer_peek(p->l)->k != TOKEN_KIND_COMMA)
+                        break;
+
+                lexer_discard(p->l); // ,
+        }
+
+        if (!expect(p, TOKEN_KIND_RCURLY))
+                return 0;
+
+        return 1;
+}
+
 static expr *
 parse_primary_expr(parser *p)
 {
         const token *hd = lexer_peek(p->l);
 
         switch (hd->k) {
-        case TOKEN_KIND_INTEGER_LITERAL:
+        case TOKEN_KIND_INTEGER_LITERAL: {
                 lexer_discard(p->l);
                 return (expr *)expr_integer_alloc(hd, &p->a);
+        } break;
         case TOKEN_KIND_IDENTIFIER:
+                if (lexer_peekn(p->l, 1)->k == TOKEN_KIND_LCURLY) {
+                        const token *for_;
+                        struct_literal_kv_ar setters;
+
+                        for_ = lexer_next(p->l);
+
+                        if (!parse_struct_literal_kv(p, &setters))
+                                return NULL;
+
+                        return (expr *)expr_struct_literal_alloc(for_, setters, &p->a);
+                }
                 lexer_discard(p->l);
                 return (expr *)expr_identifier_alloc(hd, &p->a);
         case TOKEN_KIND_STRING_LITERAL:
