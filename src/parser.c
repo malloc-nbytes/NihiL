@@ -282,8 +282,19 @@ parse_type(parser *p)
                 hd = lexer_next(p->l);
                 base = (type *)type_named_alloc(hd, &p->a);
         } else {
-                if (!(hd = expect(p, TOKEN_KIND_TYPE)))
+                hd = lexer_next(p->l);
+
+                if (hd->k == TOKEN_KIND_BANG) {
+                        base = (type *)type_never_alloc(&p->a);
+                        goto ptrs;
+                }
+
+                if (hd->k != TOKEN_KIND_TYPE) {
+                        p->error = comperr_from(str_from_fmt("expected `type' but got `%s'",
+                                                             token_kind_to_ccstr(hd->k)),
+                                                hd->loc);
                         return NULL;
+                }
 
                 lx = sv_view(hd->lx);
                 base = NULL;
@@ -298,6 +309,7 @@ parse_type(parser *p)
                         fatal("unhandled type");
         }
 
+ ptrs:
         while (lexer_peek(p->l)->k == TOKEN_KIND_ASTERISK) {
                 lexer_discard(p->l);
                 base = (type *)type_ptr_alloc(base, &p->a);

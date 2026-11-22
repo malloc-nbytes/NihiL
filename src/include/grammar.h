@@ -30,6 +30,7 @@ typedef enum {
         STMT_KIND_WHILE,
         STMT_KIND_RETURN,
         STMT_KIND_STRUCT,
+        STMT_KIND_EXIT,
 } stmt_kind;
 
 typedef struct expr {
@@ -148,6 +149,11 @@ typedef struct stmt_struct {
         type_struct *ty;
 } stmt_struct;
 
+typedef struct {
+        stmt base;
+        expr *e;
+} stmt_exit;
+
 expr_integer *expr_integer_alloc(const token *i, arena *a);
 expr_string *expr_string_alloc(const token *s, arena *a);
 expr_identifier *expr_identifier_alloc(const token *id, arena *a);
@@ -162,5 +168,6 @@ stmt_if *stmt_if_alloc(expr *e, stmt *then, stmt *else_, location loc, arena *a)
 stmt_while *stmt_while_alloc(expr *e, stmt *body, location loc, arena *a);
 stmt_return *stmt_return_alloc(expr *e, location loc, arena *a);
 stmt_struct *stmt_struct_alloc(const token *id, struct_member_ar members, location loc, arena *a);
+stmt_exit *stmt_exit_alloc(expr *e, location loc, arena *a);
 
 #endif // GRAMMAR_H_INCLUDED

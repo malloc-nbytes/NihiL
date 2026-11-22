@@ -166,6 +166,17 @@ type_named_alloc(const token *id,
         return t;
 }
 
+type_never *
+type_never_alloc(arena *a)
+{
+        type_never *t;
+
+        t = (type_never *)arena_alloc(a, sizeof(*t));
+        t->base.k = TYPE_KIND_NEVER;
+
+        return t;
+}
+
 int
 type_compatible(const type *ty0,
                 const type *ty1)

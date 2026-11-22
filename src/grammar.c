@@ -231,3 +231,17 @@ stmt_struct_alloc(const token      *id,
 
         return s;
 }
+
+stmt_exit *
+stmt_exit_alloc(expr *e, location loc, arena *a)
+{
+        stmt_exit *s;
+
+        s = (stmt_exit *)arena_alloc(a, sizeof(*s));
+        s->e = e;
+        s->base.k = STMT_KIND_EXIT;
+        s->base.loc = loc;
+        s->base.accept = accept_stmt_exit;
+
+        return s;
+}

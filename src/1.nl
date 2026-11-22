@@ -9,11 +9,8 @@ proc sum(a: i32, b: i32): i32
         return s;
 }
 
-export proc _start(): void
+export proc _start(): !
 {
         let u: u8 = 3;
 
-        if 1 {
-                let x: u8* = "hello" + 1;
-        }
 }
