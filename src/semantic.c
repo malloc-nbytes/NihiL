@@ -175,7 +175,7 @@ visit_expr_binary(visitor *v, expr_binary *e)
                 str tystr = type_to_str(lhs_ty);
                 array_append(checker->errors,
                              comperr_from(str_from_fmt("type `%s' does not implement operator `%s'",
-                                                       tystr, sv_view(e->op->lx)), e->lhs->loc));
+                                                       tystr.chars, sv_view(e->op->lx)), e->lhs->loc));
                 str_destroy(&tystr);
         }
 
@@ -183,7 +183,7 @@ visit_expr_binary(visitor *v, expr_binary *e)
                 str tystr = type_to_str(rhs_ty);
                 array_append(checker->errors,
                              comperr_from(str_from_fmt("type `%s' does not implement operator `%s'",
-                                                       tystr, sv_view(e->op->lx)), e->rhs->loc));
+                                                       tystr.chars, sv_view(e->op->lx)), e->rhs->loc));
                 str_destroy(&tystr);
         }
 
@@ -200,7 +200,7 @@ visit_expr_binary(visitor *v, expr_binary *e)
                 str rhs_ty_str = type_to_str(rhs_ty);
                 array_append(checker->errors,
                              comperr_from(str_from_fmt("types `%s' and `%s' are not compatible with operator `%s'",
-                                                       lhs_ty_str, rhs_ty_str, sv_view(e->op->lx)),
+                                                       lhs_ty_str.chars, rhs_ty_str.chars, sv_view(e->op->lx)),
                                           e->lhs->loc));
                 str_destroy(&lhs_ty_str);
                 str_destroy(&rhs_ty_str);
