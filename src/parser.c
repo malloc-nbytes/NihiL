@@ -477,8 +477,12 @@ parse_stmt_return(parser *p)
         if (!(begin = expect_keyword(p, KEYWORD_RETURN)))
                 return NULL;
 
-        if (!(e = parse_expr(p)))
-                return NULL;
+        if (lexer_peek(p->l)->k != TOKEN_KIND_SEMICOLON) {
+                if (!(e = parse_expr(p)))
+                        return NULL;
+        }
+        else
+                e = NULL;
 
         if (!expect(p, TOKEN_KIND_SEMICOLON))
                 return NULL;
