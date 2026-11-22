@@ -1,5 +1,6 @@
 #include "lexer.h"
 #include "parser.h"
+#include "semantic.h"
 #include "mem.h"
 #include "types.h"
 #include "io.h"
@@ -23,6 +24,15 @@ main(void)
 
         if (p.error.set) {
                 fprintf(stderr, "%s\n", comperr_format(p.error));
+                return 1;
+        }
+
+        semantic_checker checker = semantic_analysis(MOVE(&p));
+
+        if (checker.errors.len) {
+                for (size_t i = 0; i < checker.errors.len; ++i)
+                        fprintf(stderr, "%s\n",
+                                comperr_format(checker.errors.data[i]));
                 return 1;
         }
 

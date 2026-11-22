@@ -327,7 +327,18 @@ visit_stmt_proc(visitor *v, stmt_proc *s)
 static void *
 visit_stmt_if(visitor *v, stmt_if *s)
 {
+        semantic_checker *checker;
+
+        checker = (semantic_checker *)v->context;
+
         s->e->accept(s->e, v);
+
+        if (s->then->k != STMT_KIND_BLOCK) {
+                array_append(checker->errors,
+                             comperr_from(str_from("the body of `if' statements must be a block"),
+                                          s->then->loc));
+        }
+
         s->then->accept(s->then, v);
         if (s->else_)
                 s->else_->accept(s->else_, v);
