@@ -479,6 +479,13 @@ visit_stmt_return(visitor *v, stmt_return *s)
         return NULL;
 }
 
+static void *
+visit_stmt_struct(visitor *v, stmt_struct *s)
+{
+        assert(v && s && 0 && "unimplemented");
+        return NULL;
+}
+
 semantic_checker
 semantic_analysis(MOVE(parser *p))
 {
@@ -511,7 +518,8 @@ semantic_analysis(MOVE(parser *p))
                            visit_stmt_proc,
                            visit_stmt_if,
                            visit_stmt_while,
-                           visit_stmt_return);
+                           visit_stmt_return,
+                           visit_stmt_struct);
 
         for (size_t i = 0; i < c.p->stmts.len; ++i)
                 c.p->stmts.data[i]->accept(c.p->stmts.data[i], &v);

@@ -211,3 +211,21 @@ stmt_return_alloc(expr *e, location loc, arena *a)
 
         return s;
 }
+
+stmt_struct *
+stmt_struct_alloc(const token      *id,
+                  struct_record_ar  members,
+                  location          loc,
+                  arena            *a)
+{
+        stmt_struct *s;
+
+        s = (stmt_struct *)arena_alloc(a, sizeof(*s));
+        s->id = id;
+        s->members = members;
+        s->base.k = STMT_KIND_STRUCT;
+        s->base.loc = loc;
+        s->base.accept = accept_stmt_struct;
+
+        return s;
+}
