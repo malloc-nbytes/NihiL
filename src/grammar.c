@@ -214,7 +214,7 @@ stmt_return_alloc(expr *e, location loc, arena *a)
 
 stmt_struct *
 stmt_struct_alloc(const token      *id,
-                  struct_record_ar  members,
+                  struct_member_ar  members,
                   location          loc,
                   arena            *a)
 {

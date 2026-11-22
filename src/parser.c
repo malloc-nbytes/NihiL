@@ -408,10 +408,10 @@ parse_proc_parameters(parser        *p,
                         .bind = NULL,
                 }));
 
-                if (lexer_peek(p->l)->k == TOKEN_KIND_COMMA)
-                        lexer_discard(p->l); // ,
-                else
+                if (lexer_peek(p->l)->k != TOKEN_KIND_COMMA)
                         break;
+
+                lexer_discard(p->l); // ,
         }
 
         if (!expect(p, TOKEN_KIND_RPAREN))
@@ -468,9 +468,11 @@ parse_stmt_proc(parser *p)
         if ((flags & PROC_FLAG_EXTERN) == 0) {
                 if (!(body = parse_stmt_block(p)))
                         return NULL;
-        }
-        else
+        } else {
+                if (!expect(p, TOKEN_KIND_SEMICOLON))
+                        return NULL;
                 body = NULL;
+        }
 
         return stmt_proc_alloc(flags, id, params, ty, body, begin->loc, &p->a);
 }
@@ -545,6 +547,62 @@ parse_stmt_return(parser *p)
         return stmt_return_alloc(e, begin->loc, &p->a);
 }
 
+static int
+parse_struct_members(parser           *p,
+                     struct_member_ar *o_members)
+{
+        if (!expect(p, TOKEN_KIND_LCURLY))
+                return 0;
+
+        while (lexer_peek(p->l)->k != TOKEN_KIND_RCURLY
+               && lexer_peek(p->l)->k != TOKEN_KIND_EOF) {
+                const token *id;
+                type *ty;
+
+                if (!(id = expect(p, TOKEN_KIND_IDENTIFIER)))
+                        return 0;
+                if (!expect(p, TOKEN_KIND_COLON))
+                        return 0;
+                if (!(ty = parse_type(p)))
+                        return 0;
+
+                array_append(*o_members, ((struct_member) {
+                        .id = id,
+                        .ty = ty,
+                        .bind = NULL,
+                }));
+
+                if (lexer_peek(p->l)->k != TOKEN_KIND_COMMA)
+                        break;
+
+                lexer_discard(p->l); // ,
+        }
+
+        if (!expect(p, TOKEN_KIND_RCURLY))
+                return 0;
+
+        return 1;
+}
+
+static stmt_struct *
+parse_stmt_struct(parser *p)
+{
+        const token *begin;
+        const token *id;
+        struct_member_ar members;
+
+        if (!(begin = expect_keyword(p, KEYWORD_STRUCT)))
+                return NULL;
+
+        if (!(id = expect(p, TOKEN_KIND_IDENTIFIER)))
+                return NULL;
+
+        if (!parse_struct_members(p, &members))
+                return NULL;
+
+        return stmt_struct_alloc(id, members, begin->loc, &p->a);
+}
+
 static stmt *
 parse_stmt_keyword(parser *p)
 {
@@ -566,6 +624,8 @@ parse_stmt_keyword(parser *p)
                 return (stmt *)parse_stmt_if(p);
         if (!strcmp(lx, KEYWORD_WHILE))
                 return (stmt *)parse_stmt_while(p);
+        if (!strcmp(lx, KEYWORD_STRUCT))
+                return (stmt *)parse_stmt_struct(p);
 
         p->error = comperr_from(str_from_fmt("illegal keyword `%s'", lx), hd->loc);
         return NULL;

@@ -11,6 +11,7 @@
 #define KEYWORD_LET    "let"
 #define KEYWORD_WHILE  "while"
 #define KEYWORD_RETURN "return"
+#define KEYWORD_STRUCT "struct"
 
 #define KEYWORDS_CPL { \
         KEYWORD_IF, \
@@ -21,6 +22,7 @@
         KEYWORD_LET, \
         KEYWORD_WHILE, \
         KEYWORD_RETURN, \
+        KEYWORD_STRUCT, \
         NULL, \
 }
 
