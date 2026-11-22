@@ -126,13 +126,14 @@ type_ptr_alloc(type *to, arena *a)
 }
 
 type_proc *
-type_proc_alloc(type *ty, typep_ar tys, arena *a)
+type_proc_alloc(type *ty, typep_ar tys, int variadic, arena *a)
 {
         type_proc *t;
 
         t = (type_proc *)arena_alloc(a, sizeof(*t));
         t->ty = ty;
         t->tys = tys;
+        t->variadic = variadic;
         t->base.k = TYPE_KIND_PROC;
 
         return t;
@@ -173,6 +174,7 @@ type_compatible(const type *ty0,
         return 1;
 }
 
+// TODO: Does not yet support logical/bitwise.
 int
 type_implements_operator(const type *const ty,
                          int               op)

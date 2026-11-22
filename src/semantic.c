@@ -87,12 +87,45 @@ lookup(semantic_checker *checker,
         return bind;
 }
 
+static type *
+visit_expr_expected(visitor *v,
+                    expr    *e,
+                    type    *expected_type)
+{
+        semantic_checker *checker;
+        type *old_expected_type;
+        type *actual_type;
+
+        checker = (semantic_checker *)v->context;
+        old_expected_type = checker->expected_type;
+        checker->expected_type = expected_type;
+
+        actual_type = (type *)e->accept(e, v);
+
+        checker->expected_type = old_expected_type;
+
+        return actual_type;
+}
+
+static int
+is_integer_type(const type *ty)
+{
+        return ty
+                && ty->k >= TYPE_KIND_I8
+                && ty->k < __TYPE_INTEGERS;
+}
+
 static void *
 visit_expr_integer(visitor *v, expr_integer *e)
 {
-        (void)v;
+        semantic_checker *checker;
 
-        e->base.ty = (type *)type_i32_alloc();
+        checker = (semantic_checker *)v->context;
+
+        if (is_integer_type(checker->expected_type))
+                e->base.ty = checker->expected_type;
+        else
+                e->base.ty = (type *)type_i32_alloc();
 
         return (void *)e->base.ty;
 }
@@ -135,8 +168,8 @@ visit_expr_binary(visitor *v, expr_binary *e)
         type *rhs_ty;
 
         checker = (semantic_checker *)v->context;
-        lhs_ty = e->lhs->accept(e->lhs, v);
-        rhs_ty = e->rhs->accept(e->rhs, v);
+        lhs_ty = visit_expr_expected(v, e->lhs, checker->expected_type);
+        rhs_ty = visit_expr_expected(v, e->rhs, lhs_ty);
 
         if (!type_implements_operator(lhs_ty, e->op->k)) {
                 str tystr = type_to_str(lhs_ty);
@@ -200,7 +233,9 @@ visit_stmt_let(visitor *v, stmt_let *s)
         }
 
         if (s->e) {
-                type *init_ty = (type *)s->e->accept(s->e, v);
+                type *init_ty;
+
+                init_ty = visit_expr_expected(v, s->e, s->ty);
 
                 if (!type_compatible(s->ty, init_ty)) {
                         str let_tystr = type_to_str(s->ty);
@@ -248,7 +283,7 @@ visit_stmt_proc(visitor *v, stmt_proc *s)
         for (size_t i = 0; i < s->params.len; ++i)
                 array_append(param_tys, (type *)s->params.data[i].ty);
 
-        proc_ty = type_proc_alloc(s->ty, param_tys, &checker->a);
+        proc_ty = type_proc_alloc(s->ty, param_tys, s->flags & PROC_FLAG_VARIADIC, &checker->a);
 
         s->bind = declare(checker,
                           s->id,
@@ -265,6 +300,13 @@ visit_stmt_proc(visitor *v, stmt_proc *s)
                 proc_param *param;
 
                 param = &s->params.data[i];
+
+                if (param->ty->k == TYPE_KIND_VOID) {
+                        array_append(checker->errors,
+                                     comperr_from(str_from("procedure parameters must not be of type `void'"),
+                                                  param->id->loc));
+                }
+
                 param->bind = declare(checker,
                                       param->id,
                                       BINDING_KIND_PARAMETER,
@@ -328,7 +370,7 @@ visit_stmt_return(visitor *v, stmt_return *s)
                 return NULL;
         }
 
-        return_ty = (type *)s->e->accept(s->e, v);
+        return_ty = visit_expr_expected(v, s->e, checker->expected_type);
 
         if (!type_compatible(checker->expected_type, return_ty)) {
                 str expected_ty;
