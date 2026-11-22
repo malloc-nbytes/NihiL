@@ -88,7 +88,7 @@ typedef struct {
 
 typedef struct {
         const token *id;
-        const type *ty;
+        type *ty;
         binding *bind;
 } proc_param;
 

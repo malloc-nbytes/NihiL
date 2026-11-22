@@ -174,7 +174,7 @@ stmt_while_alloc(expr     *e,
         s->body = body;
         s->base.k = STMT_KIND_WHILE;
         s->base.loc = loc;
-        s->base.accept = accept_stmt_if;
+        s->base.accept = accept_stmt_while;
 
         return s;
 }

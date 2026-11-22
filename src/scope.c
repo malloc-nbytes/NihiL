@@ -35,11 +35,7 @@ scope_destroy(scope *sc)
         if (!sc)
                 return;
 
-        for (size_t i = 0; i < sc->entries.len; ++i)
-                free(sc->entries.data[i].name);
-
         array_free(sc->entries);
-        free(sc);
 }
 
 void *

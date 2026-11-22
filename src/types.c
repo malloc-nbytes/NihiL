@@ -153,7 +153,7 @@ type_compatible(const type *ty0,
 
         if (ty0->k == TYPE_KIND_PTR)
                 return type_compatible(((const type_ptr *)ty0)->to,
-                                       ((const type_ptr *)ty0)->to);
+                                       ((const type_ptr *)ty1)->to);
 
         if (ty0->k == TYPE_KIND_PROC) {
                 const type_proc *pty0 = (const type_proc *)ty0;
@@ -170,7 +170,7 @@ type_compatible(const type *ty0,
                 return type_compatible(pty0->ty, pty1->ty);
         }
 
-        return 0;
+        return 1;
 }
 
 int
@@ -220,9 +220,16 @@ type_to_str(const type *const ty)
                 return str_from("u64");
         case TYPE_KIND_VOID:
                 return str_from("void");
-        case TYPE_KIND_PTR:
-                return str_from_fmt("ptr<%s>",
-                                    type_to_str(((const type_ptr *const)ty)->to));
+        case TYPE_KIND_PTR: {
+                str pointee;
+                str result;
+
+                pointee = type_to_str(((const type_ptr *const)ty)->to);
+                result = str_from_fmt("ptr<%s>", pointee.chars);
+                str_destroy(&pointee);
+
+                return result;
+        }
         case TYPE_KIND_PROC: {
                 str res;
                 const type_proc *pty;

@@ -29,11 +29,15 @@ is_valid_lvalue(expr_kind k)
 static int
 operator_will_assign(token_kind k)
 {
-        return (k == TOKEN_KIND_PLUS        || k == TOKEN_KIND_PLUS_EQUALS
-                || k == TOKEN_KIND_MINUS    || k == TOKEN_KIND_MINUS_EQUALS
-                || k == TOKEN_KIND_ASTERISK || k == TOKEN_KIND_ASTERISK_EQUALS
-                || k == TOKEN_KIND_FSLASH   || k == TOKEN_KIND_FSLASH_EQUALS
-                || k == TOKEN_KIND_PERCENT  || k == TOKEN_KIND_PERCENT_EQUALS);
+        return k == TOKEN_KIND_EQUALS
+                || k == TOKEN_KIND_PLUS_EQUALS
+                || k == TOKEN_KIND_MINUS_EQUALS
+                || k == TOKEN_KIND_ASTERISK_EQUALS
+                || k == TOKEN_KIND_FSLASH_EQUALS
+                || k == TOKEN_KIND_PERCENT_EQUALS
+                || k == TOKEN_KIND_PIPE_EQUALS
+                || k == TOKEN_KIND_AMPERSAND_EQUALS
+                || k == TOKEN_KIND_TILDE_EQUALS;
 }
 
 static binding *
@@ -86,6 +90,8 @@ lookup(semantic_checker *checker,
 static void *
 visit_expr_integer(visitor *v, expr_integer *e)
 {
+        (void)v;
+
         e->base.ty = (type *)type_i32_alloc();
 
         return (void *)e->base.ty;
@@ -137,13 +143,15 @@ visit_expr_binary(visitor *v, expr_binary *e)
                 array_append(checker->errors,
                              comperr_from(str_from_fmt("type `%s' does not implement operator `%s'",
                                                        tystr, sv_view(e->op->lx)), e->lhs->loc));
+                str_destroy(&tystr);
         }
 
-        if (!type_implements_operator(lhs_ty, e->op->k)) {
+        if (!type_implements_operator(rhs_ty, e->op->k)) {
                 str tystr = type_to_str(rhs_ty);
                 array_append(checker->errors,
                              comperr_from(str_from_fmt("type `%s' does not implement operator `%s'",
                                                        tystr, sv_view(e->op->lx)), e->rhs->loc));
+                str_destroy(&tystr);
         }
 
         if (operator_will_assign(e->op->k)
@@ -151,7 +159,7 @@ visit_expr_binary(visitor *v, expr_binary *e)
                 array_append(checker->errors,
                              comperr_from(str_from_fmt("performing an assignment `%s' on an invalid lvalue",
                                                        token_kind_to_ccstr(e->op->k)),
-                                         e->lhs->loc));
+                                          e->lhs->loc));
         }
 
         if (!type_compatible(lhs_ty, rhs_ty)) {
@@ -191,16 +199,18 @@ visit_stmt_let(visitor *v, stmt_let *s)
                                           s->base.loc));
         }
 
-        type *init_ty = (type *)s->e->accept(s->e, v);
+        if (s->e) {
+                type *init_ty = (type *)s->e->accept(s->e, v);
 
-        if (!type_compatible(s->ty, init_ty)) {
-                str let_tystr = type_to_str(s->ty);
-                str init_tystr = type_to_str(init_ty);
-                array_append(checker->errors, comperr_from(str_from_fmt("types `%s' and `%s' are not compatible",
-                                                                        let_tystr.chars, init_tystr.chars),
-                                                           s->base.loc));
-                str_destroy(&let_tystr);
-                str_destroy(&init_tystr);
+                if (!type_compatible(s->ty, init_ty)) {
+                        str let_tystr = type_to_str(s->ty);
+                        str init_tystr = type_to_str(init_ty);
+                        array_append(checker->errors, comperr_from(str_from_fmt("types `%s' and `%s' are not compatible",
+                                                                                let_tystr.chars, init_tystr.chars),
+                                                                   s->base.loc));
+                        str_destroy(&let_tystr);
+                        str_destroy(&init_tystr);
+                }
         }
 
         s->bind = declare(checker, s->id, BINDING_KIND_VARIABLE, s->ty, s);
@@ -211,8 +221,15 @@ visit_stmt_let(visitor *v, stmt_let *s)
 static void *
 visit_stmt_block(visitor *v, stmt_block *s)
 {
+        semantic_checker *checker;
+
+        checker = (semantic_checker *)v->context;
+        scope_push(checker);
+
         for (size_t i = 0; i < s->stmts.len; ++i)
                 s->stmts.data[i]->accept(s->stmts.data[i], v);
+
+        scope_pop(checker);
 
         return NULL;
 }
@@ -220,8 +237,48 @@ visit_stmt_block(visitor *v, stmt_block *s)
 static void *
 visit_stmt_proc(visitor *v, stmt_proc *s)
 {
-        (void)v;
-        (void)s;
+        semantic_checker *checker;
+        typep_ar param_tys;
+        type_proc *proc_ty;
+        type *old_expected_type;
+
+        checker = (semantic_checker *)v->context;
+        param_tys = array_empty_explicit(typep_ar);
+
+        for (size_t i = 0; i < s->params.len; ++i)
+                array_append(param_tys, (type *)s->params.data[i].ty);
+
+        proc_ty = type_proc_alloc(s->ty, param_tys, &checker->a);
+
+        s->bind = declare(checker,
+                          s->id,
+                          BINDING_KIND_PROCEDURE,
+                          (type *)proc_ty,
+                          s);
+
+        if (!s->body)
+                return NULL;
+
+        scope_push(checker);
+
+        for (size_t i = 0; i < s->params.len; ++i) {
+                proc_param *param;
+
+                param = &s->params.data[i];
+                param->bind = declare(checker,
+                                      param->id,
+                                      BINDING_KIND_PARAMETER,
+                                      (type *)param->ty,
+                                      param);
+        }
+
+        old_expected_type = checker->expected_type;
+        checker->expected_type = s->ty;
+        s->body->base.accept((stmt *)s->body, v);
+        checker->expected_type = old_expected_type;
+
+        scope_pop(checker);
+
         return NULL;
 }
 
@@ -248,8 +305,46 @@ visit_stmt_while(visitor *v, stmt_while *s)
 static void *
 visit_stmt_return(visitor *v, stmt_return *s)
 {
-        (void)v;
-        (void)s;
+        semantic_checker *checker;
+        type *return_ty;
+
+        checker = (semantic_checker *)v->context;
+
+        if (!checker->expected_type) {
+                array_append(checker->errors,
+                             comperr_from(str_from("return statemesnt outside a procedure"),
+                                          s->base.loc));
+                if (s->e)
+                        s->e->accept(s->e, v);
+                return NULL;
+        }
+
+        if (!s->e) {
+                if (checker->expected_type->k != TYPE_KIND_VOID) {
+                        array_append(checker->errors,
+                                     comperr_from(str_from("non-void procedure must return a value"),
+                                                  s->base.loc));
+                }
+                return NULL;
+        }
+
+        return_ty = (type *)s->e->accept(s->e, v);
+
+        if (!type_compatible(checker->expected_type, return_ty)) {
+                str expected_ty;
+                str actual_ty;
+
+                expected_ty = type_to_str(checker->expected_type);
+                actual_ty = type_to_str(return_ty);
+
+                array_append(checker->errors,
+                             comperr_from(str_from_fmt("cannot return `%s' from procedure returning `%s'",
+                                                       actual_ty.chars, expected_ty.chars),
+                                          s->base.loc));
+                str_destroy(&expected_ty);
+                str_destroy(&actual_ty);
+        }
+
         return NULL;
 }
 
@@ -263,11 +358,15 @@ semantic_analysis(MOVE(parser *p))
                 .p = p,
                 .errors = array_empty(),
                 .bindings = array_empty(),
-                .global = scope_create(NULL, &c.a),
+                .global = NULL,
                 .current = NULL,
                 .expected_type = NULL,
                 .a = (arena) {0},
         };
+
+        arena_init(&c.a, ARENA_DEFAULT_BLK_SIZE);
+        c.global = scope_create(NULL, &c.a);
+        c.current = c.global;
 
         v = visitor_create(&c,
                            visit_expr_integer,
@@ -281,8 +380,6 @@ semantic_analysis(MOVE(parser *p))
                            visit_stmt_if,
                            visit_stmt_while,
                            visit_stmt_return);
-
-        arena_init(&c.a, ARENA_DEFAULT_BLK_SIZE);
 
         for (size_t i = 0; i < c.p->stmts.len; ++i)
                 c.p->stmts.data[i]->accept(c.p->stmts.data[i], &v);
