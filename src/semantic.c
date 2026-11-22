@@ -4,6 +4,8 @@
 #include "types.h"
 #include "visitor.h"
 
+#include <assert.h>
+
 static void
 scope_push(semantic_checker *checker)
 {
@@ -209,6 +211,15 @@ visit_expr_binary(visitor *v, expr_binary *e)
         e->base.ty = lhs_ty;
 
         return (void *)e->base.ty;
+}
+
+static void *
+visit_expr_call(visitor *v, expr_call *e)
+{
+        (void)v;
+        (void)e;
+        assert(0);
+        return NULL;
 }
 
 static void *
@@ -426,6 +437,7 @@ semantic_analysis(MOVE(parser *p))
                            visit_expr_string,
                            visit_expr_identifier,
                            visit_expr_binary,
+                           visit_expr_call,
                            visit_stmt_expr,
                            visit_stmt_let,
                            visit_stmt_block,

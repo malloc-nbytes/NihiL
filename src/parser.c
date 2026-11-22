@@ -63,6 +63,19 @@ parse_primary_expr(parser *p)
         case TOKEN_KIND_STRING_LITERAL:
                 lexer_discard(p->l);
                 return (expr *)expr_string_alloc(hd, &p->a);
+        case TOKEN_KIND_LPAREN: {
+                expr *e;
+
+                lexer_discard(p->l); // (
+
+                if (!(e = parse_expr(p)))
+                        return NULL;
+
+                if (!expect(p, TOKEN_KIND_RPAREN))
+                        return NULL;
+
+                return e;
+        } break;
         default:
                 break;
         }

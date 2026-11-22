@@ -7,6 +7,7 @@ typedef void *(*visit_expr_integer_sig)(visitor *, expr_integer *);
 typedef void *(*visit_expr_string_sig)(visitor *, expr_string *);
 typedef void *(*visit_expr_identifier_sig)(visitor *, expr_identifier *);
 typedef void *(*visit_expr_binary_sig)(visitor *, expr_binary *);
+typedef void *(*visit_expr_call_sig)(visitor *, expr_call *);
 
 typedef void *(*visit_stmt_expr_sig)(visitor *, stmt_expr *);
 typedef void *(*visit_stmt_let_sig)(visitor *, stmt_let *);
@@ -23,6 +24,7 @@ typedef struct visitor {
         visit_expr_string_sig visit_expr_string;
         visit_expr_identifier_sig visit_expr_identifier;
         visit_expr_binary_sig visit_expr_binary;
+        visit_expr_call_sig visit_expr_call;
 
         visit_stmt_expr_sig visit_stmt_expr;
         visit_stmt_let_sig visit_stmt_let;
@@ -39,6 +41,7 @@ visitor_create(void                      *context,
                visit_expr_string_sig      visit_expr_string,
                visit_expr_identifier_sig  visit_expr_identifier,
                visit_expr_binary_sig      visit_expr_binary,
+               visit_expr_call_sig        visit_expr_call,
                visit_stmt_expr_sig        visit_stmt_expr,
                visit_stmt_let_sig         visit_stmt_let,
                visit_stmt_block_sig       visit_stmt_block,
@@ -51,6 +54,7 @@ void *accept_expr_integer(expr *e, visitor *v);
 void *accept_expr_string(expr *e, visitor *v);
 void *accept_expr_identifier(expr *e, visitor *v);
 void *accept_expr_binary(expr *e, visitor *v);
+void *accept_expr_call(expr *e, visitor *v);
 
 void *accept_stmt_expr(stmt *s, visitor *v);
 void *accept_stmt_let(stmt *s, visitor *v);

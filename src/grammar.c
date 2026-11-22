@@ -1,4 +1,5 @@
 #include "grammar.h"
+#include "arena.h"
 #include "visitor.h"
 
 expr_integer *
@@ -63,6 +64,24 @@ expr_binary_alloc(expr        *lhs,
         e->base.loc = lhs->loc;
         e->base.ty = NULL;
         e->base.accept = accept_expr_binary;
+
+        return e;
+}
+
+expr_call *
+expr_call_alloc(expr     *lhs,
+                exprp_ar  exprs,
+                arena    *a)
+{
+        expr_call *e;
+
+        e = (expr_call *)arena_alloc(a, sizeof(*e));
+        e->lhs = lhs;
+        e->exprs = exprs;
+        e->base.k = EXPR_KIND_CALL;
+        e->base.loc = lhs->loc;
+        e->base.ty = NULL;
+        e->base.accept = accept_expr_call;
 
         return e;
 }
