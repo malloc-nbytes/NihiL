@@ -174,6 +174,25 @@ expr_array_literal_alloc(exprp_ar  exprs,
         return e;
 }
 
+expr_index *
+expr_index_alloc(expr     *lhs,
+                 expr     *idx,
+                 location  loc,
+                 arena    *a)
+{
+        expr_index *e;
+
+        e = (expr_index *)arena_alloc(a, sizeof(*e));
+        e->lhs = lhs;
+        e->idx = idx;
+        e->base.k = EXPR_KIND_INDEX;
+        e->base.loc = loc;
+        e->base.ty = NULL;
+        e->base.accept = accept_expr_index;
+
+        return e;
+}
+
 stmt_expr *
 stmt_expr_alloc(expr *e, arena *a)
 {
