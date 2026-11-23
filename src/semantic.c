@@ -161,6 +161,15 @@ resolve_type(semantic_checker *checker,
                 return ty;
         }
 
+        if (ty->k == TYPE_KIND_ARRAY) {
+                type_array *array;
+
+                array = (type_array *)ty;
+                array->of = resolve_type(checker, array->of, loc);
+
+                return ty;
+        }
+
         if (ty->k == TYPE_KIND_NAMED) {
                 type_named *named;
                 binding *bind;
@@ -580,8 +589,69 @@ visit_expr_address(visitor *v, expr_address *e)
 static void *
 visit_expr_array_literal(visitor *v, expr_array_literal *e)
 {
-        assert(0 && v && e);
-        return NULL;
+        semantic_checker *checker;
+        type *element_ty;
+        type_array *array_ty;
+        size_t start;
+
+        checker = (semantic_checker *)v->context;
+        element_ty = NULL;
+        array_ty = NULL;
+        start = 0;
+
+        if (checker->expected_type
+            && checker->expected_type->k == TYPE_KIND_ARRAY) {
+                array_ty = (type_array *)checker->expected_type;
+                element_ty = array_ty->of;
+
+                if (e->exprs.len != array_ty->len) {
+                        array_append(checker->errors,
+                                     comperr_from(str_from_fmt("array literal has %zu element%s but array type requires %zu",
+                                                               e->exprs.len,
+                                                               e->exprs.len == 1 ? "" : "s",
+                                                               array_ty->len),
+                                                  e->base.loc));
+                }
+        } else if (e->exprs.len == 0) {
+                array_append(checker->errors,
+                             comperr_from(str_from("cannot infer the element type of an empty array literal"),
+                                          e->base.loc));
+
+                e->base.ty = (type *)type_void_alloc();
+                return (void *)e->base.ty;
+        } else {
+                element_ty = (type *)e->exprs.data[0]->accept(e->exprs.data[0], v);
+                array_ty = type_array_alloc(element_ty, e->exprs.len, &checker->a);
+                start = 1;
+        }
+
+        for (size_t i = start; i < e->exprs.len; ++i) {
+                type *actual_ty;
+
+                actual_ty = visit_expr_expected(v, e->exprs.data[i], element_ty);
+
+                if (!type_compatible(element_ty, actual_ty)) {
+                        str expected_tystr;
+                        str actual_tystr;
+
+                        expected_tystr = type_to_str(element_ty);
+                        actual_tystr = type_to_str(actual_ty);
+
+                        array_append(checker->errors,
+                                     comperr_from(str_from_fmt("array element %zu has type %s' but array elements require %s'",
+                                                               i + 1,
+                                                               actual_tystr.chars,
+                                                               expected_tystr.chars),
+                                                  e->exprs.data[i]->loc));
+
+                        str_destroy(&expected_tystr);
+                        str_destroy(&actual_tystr);
+                }
+        }
+
+        e->base.ty = (type *)array_ty;
+
+        return (void *)e->base.ty;
 }
 
 static void *

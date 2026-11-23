@@ -5,7 +5,10 @@
 #include "error.h"
 
 #include <assert.h>
+#include <errno.h>
 #include <string.h>
+#include <stdint.h>
+#include <stdlib.h>
 
 static stmt *parse_stmt(parser *p);
 static expr *parse_expr(parser *p);
@@ -89,6 +92,36 @@ parse_struct_literal_kv(parser               *p,
         return 1;
 }
 
+static expr_array_literal *
+parse_array_literal_expr(parser *p)
+{
+        const token *begin;
+        exprp_ar exprs = array_empty();
+
+        if (!(begin = expect(p, TOKEN_KIND_LCURLY)))
+                return NULL;
+
+        while (lexer_peek(p->l)->k != TOKEN_KIND_RCURLY
+               && lexer_peek(p->l)->k != TOKEN_KIND_EOF) {
+                expr *elem;
+
+                if (!(elem = parse_expr(p)))
+                        return NULL;
+
+                array_append(exprs, elem);
+
+                if (lexer_peek(p->l)->k != TOKEN_KIND_COMMA)
+                        break;
+
+                lexer_discard(p->l); // ,
+        }
+
+        if (!expect(p, TOKEN_KIND_RCURLY))
+                return NULL;
+
+        return expr_array_literal_alloc(exprs, begin->loc, &p->a);
+}
+
 static expr *
 parse_primary_expr(parser *p)
 {
@@ -128,7 +161,9 @@ parse_primary_expr(parser *p)
                         return NULL;
 
                 return e;
-        } break;
+        }
+        case TOKEN_KIND_LCURLY:
+                return (expr *)parse_array_literal_expr(p);
         default:
                 break;
         }
@@ -398,9 +433,46 @@ parse_type(parser *p)
         }
 
  ptrs:
-        while (lexer_peek(p->l)->k == TOKEN_KIND_ASTERISK) {
-                lexer_discard(p->l);
-                base = (type *)type_ptr_alloc(base, &p->a);
+        while (1) {
+                if (lexer_peek(p->l)->k == TOKEN_KIND_ASTERISK) {
+                        lexer_discard(p->l);
+                        base = (type *)type_ptr_alloc(base, &p->a);
+                        continue;
+                }
+
+                if (lexer_peek(p->l)->k == TOKEN_KIND_LSQR) {
+                        const token *len_tok;
+                        unsigned long long len;
+                        char *end;
+
+                        lexer_discard(p->l); // [
+
+                        if (!(len_tok = expect(p, TOKEN_KIND_INTEGER_LITERAL)))
+                                return NULL;
+
+                        errno = 0;
+                        len = strtoull(sv_view(len_tok->lx), &end, 10);
+
+                        if (errno == ERANGE || *end != '\0' || len > SIZE_MAX) {
+                                p->error = comperr_from(str_from("array length is out of range"),
+                                                       len_tok->loc);
+                                return NULL;
+                        }
+
+                        if (len == 0) {
+                                p->error = comperr_from(str_from("array length must be greater than 0"),
+                                                        len_tok->loc);
+                                return NULL;
+                        }
+
+                        if (!expect(p, TOKEN_KIND_RSQR))
+                                return NULL;
+
+                        base = (type *)type_array_alloc(base, (size_t)len, &p->a);
+                        continue;
+                }
+
+                break;
         }
 
         return base;

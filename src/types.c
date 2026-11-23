@@ -230,6 +230,17 @@ type_compatible(const type *ty0,
                 return type_compatible(pty0->ty, pty1->ty);
         }
 
+        if (ty0->k == TYPE_KIND_ARRAY) {
+                const type_array *array0;
+                const type_array *array1;
+
+                array0 = (const type_array *)ty0;
+                array1 = (const type_array *)ty1;
+
+                return array0->len == array1->len
+                        && type_compatible(array0->of, array1->of);
+        }
+
         return 1;
 }
 
@@ -323,6 +334,18 @@ type_to_str(const type *const ty)
                 return str_from(sv_view(((const type_struct *)ty)->declaration->id->lx));
         case TYPE_KIND_NAMED:
                 return str_from(sv_view(((const type_named *)ty)->id->lx));
+        case TYPE_KIND_ARRAY: {
+                const type_array *array;
+                str element_ty;
+                str result;
+
+                array = (const type_array *)ty;
+                element_ty = type_to_str(array->of);
+                result = str_from_fmt("%s[%zu]", element_ty.chars, array->len);
+                str_destroy(&element_ty);
+
+                return result;
+        }
         default:
                 return str_from("<unknown>");
         }

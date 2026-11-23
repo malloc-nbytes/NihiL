@@ -18,6 +18,8 @@ export proc _start(): i32
                 },
         };
 
+        let ar: Inner[2] = {Inner { .z = 1 }, Inner { .z = 2 }};
+
         p.inner.z = p.inner.z + (Inner { .z = 3 }).z;
 
         p.x = 3;
