@@ -114,6 +114,7 @@ expr_member_alloc(expr        *lhs,
         e = (expr_member *)arena_alloc(a, sizeof(*e));
         e->lhs = lhs;
         e->member = member;
+        e->resolved = NULL;
         e->base.k = EXPR_KIND_MEMBER;
         e->base.loc = lhs->loc;
         e->base.ty = NULL;

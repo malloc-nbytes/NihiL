@@ -26,7 +26,8 @@ scope_pop(semantic_checker *checker)
 static int
 is_valid_lvalue(expr_kind k)
 {
-        return k == EXPR_KIND_IDENTIFIER;
+        return k == EXPR_KIND_IDENTIFIER
+                || k == EXPR_KIND_MEMBER;
 }
 
 static int
@@ -474,8 +475,49 @@ visit_expr_struct_literal(visitor *v, expr_struct_literal *e)
 static void *
 visit_expr_member(visitor *v, expr_member *e)
 {
-        assert(0 && v && e);
-        return NULL;
+        semantic_checker *checker;
+        type *lhs_ty;
+        type_struct *struct_ty;
+        struct_member *member;
+
+        checker = (semantic_checker *)v->context;
+        lhs_ty = (type *)e->lhs->accept(e->lhs, v);
+
+        if (lhs_ty->k != TYPE_KIND_STRUCT) {
+                str tystr;
+
+                tystr = type_to_str(lhs_ty);
+
+                array_append(checker->errors,
+                             comperr_from(str_from_fmt("cannot access member `%s' of expression type `%s'",
+                                                       sv_view(e->member->lx),
+                                                       tystr.chars),
+                                          e->member->loc));
+
+                str_destroy(&tystr);
+
+                e->base.ty = (type *)type_void_alloc();
+                return (void *)e->base.ty;
+        }
+
+        struct_ty = (type_struct *)lhs_ty;
+        member = lookup_struct_member(struct_ty, e->member);
+
+        if (!member) {
+                array_append(checker->errors,
+                             comperr_from(str_from_fmt("structure `%s' has no member `%s'",
+                                                       sv_view(struct_ty->declaration->id->lx),
+                                                       sv_view2(e->member->lx)),
+                                          e->member->loc));
+
+                e->base.ty = (type *)type_void_alloc();
+                return (void *)e->base.ty;
+        }
+
+        e->resolved = member;
+        e->base.ty = member->ty;
+
+        return (void *)e->base.ty;
 }
 
 static void *

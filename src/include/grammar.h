@@ -92,6 +92,7 @@ typedef struct {
         expr base;
         expr *lhs;
         const token *member;
+        struct_member *resolved;
 } expr_member;
 
 typedef struct stmt {

@@ -139,39 +139,58 @@ parse_primary_expr(parser *p)
 }
 
 static expr *
-parse_call_expr(parser *p)
+parse_postfix_expr(parser *p)
 {
         expr *lhs;
 
         if (!(lhs = parse_primary_expr(p)))
                 return NULL;
 
-        while (lexer_peek(p->l)->k == TOKEN_KIND_LPAREN) {
-                exprp_ar exprs = array_empty();
+        while (1) {
+                if (lexer_peek(p->l)->k == TOKEN_KIND_LPAREN) {
+                        exprp_ar exprs = array_empty();
 
-                lexer_discard(p->l); // (
+                        lexer_discard(p->l); // (
 
-                if (lexer_peek(p->l)->k != TOKEN_KIND_RPAREN
-                    && lexer_peek(p->l)->k != TOKEN_KIND_EOF) {
-                        while (1) {
-                                expr *arg;
+                        if (lexer_peek(p->l)->k != TOKEN_KIND_RPAREN
+                            && lexer_peek(p->l)->k != TOKEN_KIND_EOF) {
+                                while (1) {
+                                        expr *arg;
 
-                                if (!(arg = parse_expr(p)))
-                                        return NULL;
+                                        if (!(arg = parse_expr(p)))
+                                                return NULL;
 
-                                array_append(exprs, arg);
+                                        array_append(exprs, arg);
 
-                                if (lexer_peek(p->l)->k != TOKEN_KIND_COMMA)
-                                        break;
+                                        if (lexer_peek(p->l)->k != TOKEN_KIND_COMMA)
+                                                break;
 
-                                lexer_discard(p->l); // ,
+                                        lexer_discard(p->l);
+                                }
                         }
+
+                        if (!expect(p, TOKEN_KIND_RPAREN))
+                                return NULL;
+
+                        lhs = (expr *)expr_call_alloc(lhs, exprs, &p->a);
+
+                        continue;
                 }
 
-                if (!expect(p, TOKEN_KIND_RPAREN))
-                        return NULL;
+                if (lexer_peek(p->l)->k == TOKEN_KIND_PERIOD) {
+                        const token *member;
 
-                lhs = (expr *)expr_call_alloc(lhs, exprs, &p->a);
+                        lexer_discard(p->l); // .
+
+                        if (!(member = expect(p, TOKEN_KIND_IDENTIFIER)))
+                                return NULL;
+
+                        lhs = (expr *)expr_member_alloc(lhs, member, &p->a);
+
+                        continue;
+                }
+
+                break;
         }
 
         return lhs;
@@ -181,7 +200,7 @@ static expr *
 parse_unary_expr(parser *p)
 {
         // TODO
-        return parse_call_expr(p);
+        return parse_postfix_expr(p);
 }
 
 static expr *
