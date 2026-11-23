@@ -225,6 +225,22 @@ parse_postfix_expr(parser *p)
                         continue;
                 }
 
+                if (lexer_peek(p->l)->k == TOKEN_KIND_LSQR) {
+                        const token *begin;
+                        expr *idx;
+
+                        begin = lexer_next(p->l); // [
+
+                        if (!(idx = parse_expr(p)))
+                                return NULL;
+
+                        if (!expect(p, TOKEN_KIND_RSQR))
+                                return NULL;
+
+                        lhs = (expr *)expr_index_alloc(lhs, idx, begin->loc, &p->a);
+                        continue;
+                }
+
                 break;
         }
 

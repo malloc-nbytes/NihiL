@@ -28,7 +28,8 @@ is_valid_lvalue(expr_kind k)
 {
         return k == EXPR_KIND_IDENTIFIER
                 || k == EXPR_KIND_MEMBER
-                || k == EXPR_KIND_DEREF;
+                || k == EXPR_KIND_DEREF
+                || k == EXPR_KIND_INDEX;
 }
 
 static int
@@ -657,8 +658,53 @@ visit_expr_array_literal(visitor *v, expr_array_literal *e)
 static void *
 visit_expr_index(visitor *v, expr_index *e)
 {
-        assert(0 && v && e);
-        return NULL;
+        semantic_checker *checker;
+        type *lhs_ty;
+        type *idx_ty;
+
+        checker = (semantic_checker *)v->context;
+        lhs_ty = (type *)e->lhs->accept(e->lhs, v);
+        idx_ty = (type *)e->idx->accept(e->idx, v);
+
+        if (!is_integer_type(idx_ty)) {
+                str tystr;
+
+                tystr = type_to_str(idx_ty);
+
+                array_append(checker->errors,
+                             comperr_from(str_from_fmt("cannot index with expression of type `%s'",
+                                                       tystr.chars),
+                                          e->idx->loc));
+
+                str_destroy(&tystr);
+        }
+
+        if (lhs_ty->k == TYPE_KIND_ARRAY) {
+                e->base.ty = ((type_array *)lhs_ty)->of;
+                return (void *)e->base.ty;
+        }
+
+        if (lhs_ty->k == TYPE_KIND_PTR) {
+                e->base.ty = ((type_ptr *)lhs_ty)->to;
+                return (void *)e->base.ty;
+        }
+
+        { // bad case
+                str tystr;
+
+                tystr = type_to_str(lhs_ty);
+
+                array_append(checker->errors,
+                             comperr_from(str_from_fmt("cannot index expression of type `%s'",
+                                                       tystr.chars),
+                                          e->lhs->loc));
+
+                str_destroy(&tystr);
+        }
+
+        e->base.ty = (type *)type_void_alloc();
+
+        return (void *)e->base.ty;
 }
 
 static void *
