@@ -123,6 +123,23 @@ expr_member_alloc(expr        *lhs,
         return e;
 }
 
+expr_deref *
+expr_deref_alloc(expr     *rhs,
+                 location  loc,
+                 arena    *a)
+{
+        expr_deref *e;
+
+        e = (expr_deref *)arena_alloc(a, sizeof(*e));
+        e->rhs = rhs;
+        e->base.k = EXPR_KIND_DEREF;
+        e->base.loc = loc;
+        e->base.ty = NULL;
+        e->base.accept = accept_expr_deref;
+
+        return e;
+}
+
 stmt_expr *
 stmt_expr_alloc(expr *e, arena *a)
 {
