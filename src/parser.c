@@ -74,6 +74,7 @@ parse_struct_literal_kv(parser               *p,
                 array_append(*o_setters, ((struct_literal_kv) {
                         .id = id,
                         .e = e,
+                        .member = NULL,
                 }));
 
                 if (lexer_peek(p->l)->k != TOKEN_KIND_COMMA)

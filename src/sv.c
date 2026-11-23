@@ -29,3 +29,19 @@ sv_view(sv view)
         return buf;
 #undef BUF_CAP
 }
+
+const char *
+sv_view2(sv view)
+{
+#define BUF_CAP 1024
+        assert(view.len <= BUF_CAP);
+
+        static char buf[BUF_CAP+1];
+
+        memset(buf, 0, sizeof(buf));
+        if (!strncpy(buf, view.s, view.len))
+                fatal("failed to copy string: %s", strerror(errno));
+
+        return buf;
+#undef BUF_CAP
+}

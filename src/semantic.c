@@ -354,8 +354,125 @@ visit_expr_call(visitor *v, expr_call *e)
         return (void *)e->base.ty;
 }
 
+static struct_member *
+lookup_struct_member(type_struct *struct_ty,
+                    const token  *id)
+{
+        stmt_struct *declaration;
+
+        declaration = struct_ty->declaration;
+
+        for (size_t i = 0; i < declaration->members.len; ++i) {
+                struct_member *member;
+
+                member = &declaration->members.data[i];
+
+                if (tokens_equal(member->id, id))
+                        return member;
+        }
+
+        return NULL;
+}
+
 static void *
 visit_expr_struct_literal(visitor *v, expr_struct_literal *e)
+{
+        semantic_checker *checker;
+        binding *bind;
+        type *literal_ty;
+        type_struct *struct_ty;
+
+        checker = (semantic_checker *)v->context;
+        bind = lookup_type(checker, e->for_);
+
+        if (!bind) {
+                for (size_t i = 0; i < e->setters.len; ++i)
+                        e->setters.data[i].e->accept(e->setters.data[i].e, v);
+                e->base.ty = (type *)type_void_alloc();
+                return (void *)e->base.ty;
+        }
+
+        literal_ty = bind->ty;
+
+        if (literal_ty->k != TYPE_KIND_STRUCT) {
+                str tystr;
+
+                tystr = type_to_str(literal_ty);
+
+                array_append(checker->errors,
+                             comperr_from(str_from_fmt("`%s' is not a structure type",
+                                                       tystr.chars),
+                                          e->for_->loc));
+
+                str_destroy(&tystr);
+
+                for (size_t i = 0; i < e->setters.len; ++i)
+                        e->setters.data[i].e->accept(e->setters.data[i].e, v);
+
+                e->base.ty = (type *)type_void_alloc();
+                return (void *)e->base.ty;
+        }
+
+        struct_ty = (type_struct *)literal_ty;
+
+        for (size_t i = 0; i < e->setters.len; ++i) {
+                struct_literal_kv *setter;
+                struct_member *member;
+                type *value_ty;
+
+                setter = &e->setters.data[i];
+                member = lookup_struct_member(struct_ty, setter->id);
+
+                if (!member) {
+                        array_append(checker->errors,
+                                     comperr_from(str_from_fmt("structure `%s' has no member `%s'",
+                                                               sv_view(struct_ty->declaration->id->lx),
+                                                               sv_view2(setter->id->lx)),
+                                                  setter->id->loc));
+
+                        setter->e->accept(setter->e, v);
+                        continue;
+                }
+
+                for (size_t j = 0; j < i; ++j) {
+                        if (tokens_equal(setter->id, e->setters.data[j].id)) {
+                                array_append(checker->errors,
+                                             comperr_from(str_from_fmt("member `%s' is initialized more than once",
+                                                                       sv_view(setter->id->lx)),
+                                                          setter->id->loc));
+                                break;
+                        }
+                }
+
+                value_ty = visit_expr_expected(v, setter->e, member->ty);
+
+                if (!type_compatible(member->ty, value_ty)) {
+                        str expected_tystr;
+                        str actual_tystr;
+
+                        expected_tystr = type_to_str(member->ty);
+                        actual_tystr = type_to_str(value_ty);
+
+                        array_append(checker->errors,
+                                     comperr_from(str_from_fmt("member %s' has type %s' but requires `%s'",
+                                                               sv_view(setter->id->lx),
+                                                               actual_tystr.chars,
+                                                               expected_tystr.chars),
+                                                  setter->id->loc));
+                        str_destroy(&expected_tystr);
+                        str_destroy(&actual_tystr);
+                }
+
+                setter->member = member;
+        }
+
+        e->base.ty = literal_ty;
+
+        return (void *)e->base.ty;
+}
+
+static void *
+visit_expr_member(visitor *v, expr_member *e)
 {
         assert(0 && v && e);
         return NULL;
@@ -657,6 +774,7 @@ semantic_analysis(MOVE(parser *p))
                            visit_expr_binary,
                            visit_expr_call,
                            visit_expr_struct_literal,
+                           visit_expr_member,
                            visit_stmt_expr,
                            visit_stmt_let,
                            visit_stmt_block,

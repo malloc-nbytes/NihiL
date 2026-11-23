@@ -104,6 +104,24 @@ expr_struct_literal_alloc(const token          *for_,
         return e;
 }
 
+expr_member *
+expr_member_alloc(expr        *lhs,
+                  const token *member,
+                  arena       *a)
+{
+        expr_member *e;
+
+        e = (expr_member *)arena_alloc(a, sizeof(*e));
+        e->lhs = lhs;
+        e->member = member;
+        e->base.k = EXPR_KIND_MEMBER;
+        e->base.loc = lhs->loc;
+        e->base.ty = NULL;
+        e->base.accept = accept_expr_member;
+
+        return e;
+}
+
 stmt_expr *
 stmt_expr_alloc(expr *e, arena *a)
 {

@@ -14,5 +14,6 @@ typedef struct {
 sv sv_from(const char *s, ssize_t len);
 
 const char *sv_view(sv sv);
+const char *sv_view2(sv sv);
 
 #endif

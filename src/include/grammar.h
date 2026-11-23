@@ -12,6 +12,7 @@
 
 typedef struct visitor visitor;
 typedef struct binding binding;
+typedef struct struct_member struct_member;
 
 typedef enum {
         EXPR_KIND_INTEGER_LITERAL = 0,
@@ -20,6 +21,7 @@ typedef enum {
         EXPR_KIND_BINARY,
         EXPR_KIND_CALL,
         EXPR_KIND_STRUCT_LITERAL,
+        EXPR_KIND_MEMBER,
 } expr_kind;
 
 typedef enum {
@@ -75,6 +77,7 @@ typedef struct {
 typedef struct {
         const token *id;
         expr *e;
+        struct_member *member;
 } struct_literal_kv;
 
 ARRAY_DEFINE(struct_literal_kv, struct_literal_kv_ar);
@@ -84,6 +87,12 @@ typedef struct {
         const token *for_;
         struct_literal_kv_ar setters;
 } expr_struct_literal;
+
+typedef struct {
+        expr base;
+        expr *lhs;
+        const token *member;
+} expr_member;
 
 typedef struct stmt {
         stmt_kind k;
@@ -147,7 +156,7 @@ typedef struct {
         expr *e; // optional
 } stmt_return;
 
-typedef struct {
+typedef struct struct_member {
         const token *id;
         type *ty;
         binding *bind;
@@ -174,6 +183,7 @@ expr_identifier *expr_identifier_alloc(const token *id, arena *a);
 expr_binary *expr_binary_alloc(expr *lhs, const token *op, expr *rhs, arena *a);
 expr_call *expr_call_alloc(expr *lhs, exprp_ar exprs, arena *a);
 expr_struct_literal *expr_struct_literal_alloc(const token *for_, struct_literal_kv_ar setters, arena *a);
+expr_member *expr_member_alloc(expr *lhs, const token *member, arena *a);
 
 stmt_expr *stmt_expr_alloc(expr *e, arena *a);
 stmt_let *stmt_let_alloc(const token *id, type *ty, expr *e, location loc, arena *a);
