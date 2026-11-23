@@ -12,6 +12,7 @@
 
 static stmt *parse_stmt(parser *p);
 static expr *parse_expr(parser *p);
+static type *parse_type(parser *p);
 
 static token *
 expect(parser *p, token_kind k)
@@ -122,6 +123,37 @@ parse_array_literal_expr(parser *p)
         return expr_array_literal_alloc(exprs, begin->loc, &p->a);
 }
 
+static expr_cast *
+parse_cast_expr(parser *p)
+{
+        const token *begin;
+        type *to;
+        expr *rhs;
+
+        if (!(begin = expect_keyword(p, KEYWORD_CAST)))
+                return NULL;
+
+        if (!expect(p, TOKEN_KIND_LESSTHAN))
+                return NULL;
+
+        if (!(to = parse_type(p)))
+                return NULL;
+
+        if (!expect(p, TOKEN_KIND_GREATERTHAN))
+                return NULL;
+
+        if (!expect(p, TOKEN_KIND_LPAREN))
+                return NULL;
+
+        if (!(rhs = parse_expr(p)))
+                return NULL;
+
+        if (!expect(p, TOKEN_KIND_RPAREN))
+                return NULL;
+
+        return expr_cast_alloc(to, rhs, begin->loc, &p->a);
+}
+
 static expr *
 parse_primary_expr(parser *p)
 {
@@ -164,6 +196,11 @@ parse_primary_expr(parser *p)
         }
         case TOKEN_KIND_LCURLY:
                 return (expr *)parse_array_literal_expr(p);
+        case TOKEN_KIND_KEYWORD:
+                if (!strcmp(sv_view(hd->lx), KEYWORD_CAST))
+                        return (expr *)parse_cast_expr(p);
+                else
+                        return NULL;
         default:
                 break;
         }

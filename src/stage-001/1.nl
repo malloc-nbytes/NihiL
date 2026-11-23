@@ -28,7 +28,8 @@ export proc _start(): i32
 
         let ptr2: u8* = ptr + 1;
 
-        let x: i32 = cast<i32>(ptr);
+        let one: u8 = 1;
+        let two: i32 = cast<i32>(one);
 
         return 0;
 }

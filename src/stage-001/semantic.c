@@ -149,6 +149,16 @@ is_integer_type(const type *ty)
                 && ty->k < __TYPE_INTEGERS;
 }
 
+static int
+is_valid_cast(const type *from,
+              const type *to)
+{
+        return (is_integer_type(from)
+                && is_integer_type(to))
+                || (from->k == TYPE_KIND_PTR
+                    && to->k == TYPE_KIND_PTR);
+}
+
 static type *
 resolve_type(semantic_checker *checker,
              type             *ty,
@@ -749,8 +759,45 @@ visit_expr_index(visitor *v, expr_index *e)
 static void *
 visit_expr_cast(visitor *v, expr_cast *e)
 {
-        assert(0 && v && e);
-        return NULL;
+        semantic_checker *checker;
+        type *from;
+
+        checker = (semantic_checker *)v->context;
+        e->to = resolve_type(checker, e->to, e->base.loc);
+
+        from = (type *)e->rhs->accept(e->rhs, v);
+
+        if (e->to->k == TYPE_KIND_VOID) {
+                array_append(checker->errors,
+                             comperr_from(str_from("cannot cast to `void'"),
+                                          e->base.loc));
+                e->base.ty = (type *)type_void_alloc();
+                return (void *)e->base.ty;
+        }
+
+        if (!is_valid_cast(from, e->to)) {
+                str fromstr;
+                str tostr;
+
+                fromstr = type_to_str(from);
+                tostr = type_to_str(e->to);
+
+                array_append(checker->errors,
+                             comperr_from(str_from_fmt("cannot cast `%s' to `%s'",
+                                                       fromstr.chars,
+                                                       tostr.chars),
+                                          e->base.loc));
+
+                str_destroy(&fromstr);
+                str_destroy(&tostr);
+
+                e->base.ty = (type *)type_void_alloc();
+                return (void *)e->base.ty;
+        }
+
+        e->base.ty = e->to;
+
+        return (void *)e->base.ty;
 }
 
 static void *
