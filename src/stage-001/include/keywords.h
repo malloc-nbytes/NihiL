@@ -13,6 +13,7 @@
 #define KEYWORD_RETURN "return"
 #define KEYWORD_STRUCT "struct"
 #define KEYWORD_EXIT   "exit"
+#define KEYWORD_CAST   "cast"
 
 #define KEYWORDS_CPL { \
         KEYWORD_IF, \
@@ -25,6 +26,7 @@
         KEYWORD_RETURN, \
         KEYWORD_STRUCT, \
         KEYWORD_EXIT, \
+        KEYWORD_CAST, \
         NULL, \
 }
 

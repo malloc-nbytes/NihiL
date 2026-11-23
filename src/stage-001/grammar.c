@@ -193,6 +193,25 @@ expr_index_alloc(expr     *lhs,
         return e;
 }
 
+expr_cast *
+expr_cast_alloc(type     *to,
+                expr     *rhs,
+                location  loc,
+                arena    *a)
+{
+        expr_cast *e;
+
+        e = (expr_cast *)arena_alloc(a, sizeof(*e));
+        e->to = to;
+        e->rhs = rhs;
+        e->base.k = EXPR_KIND_CAST;
+        e->base.loc = loc;
+        e->base.ty = NULL;
+        e->base.accept = accept_expr_cast;
+
+        return e;
+}
+
 stmt_expr *
 stmt_expr_alloc(expr *e, arena *a)
 {

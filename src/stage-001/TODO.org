@@ -1,10 +1,11 @@
 #+TITLE: TODO
 
-* [0%] Checklist for self-hosting
+* [12%] Checklist for self-hosting
 - [ ] casting
+- [ ] sizeof, other compiler intrinsics...
 - [ ] global variables
 - [ ] null
 - [ ] compound operators
-- [ ] pointer arithmetic
+- [X] pointer arithmetic
 - [ ] TAC lowering
 - [ ] ASM gen
