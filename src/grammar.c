@@ -157,6 +157,23 @@ expr_address_alloc(expr     *rhs,
         return e;
 }
 
+expr_array_literal *
+expr_array_literal_alloc(exprp_ar  exprs,
+                         location  loc,
+                         arena    *a)
+{
+        expr_array_literal *e;
+
+        e = (expr_array_literal *)arena_alloc(a, sizeof(*e));
+        e->exprs = exprs;
+        e->base.k = EXPR_KIND_ARRAY_LITERAL;
+        e->base.loc = loc;
+        e->base.ty = NULL;
+        e->base.accept = accept_expr_array_literal;
+
+        return e;
+}
+
 stmt_expr *
 stmt_expr_alloc(expr *e, arena *a)
 {

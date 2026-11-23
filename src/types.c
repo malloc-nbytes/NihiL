@@ -177,6 +177,21 @@ type_never_alloc(arena *a)
         return t;
 }
 
+type_array *
+type_array_alloc(type   *of,
+                 size_t  len,
+                 arena  *a)
+{
+        type_array *t;
+
+        t = (type_array *)arena_alloc(a, sizeof(*t));
+        t->of = of;
+        t->len = len;
+        t->base.k = TYPE_KIND_ARRAY;
+
+        return t;
+}
+
 int
 type_compatible(const type *ty0,
                 const type *ty1)

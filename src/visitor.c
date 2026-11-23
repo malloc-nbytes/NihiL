@@ -11,6 +11,7 @@ visitor_create(void                          *context,
                visit_expr_member_sig          visit_expr_member,
                visit_expr_deref_sig           visit_expr_deref,
                visit_expr_address_sig         visit_expr_address,
+               visit_expr_array_literal_sig   visit_expr_array_literal,
 
                visit_stmt_expr_sig            visit_stmt_expr,
                visit_stmt_let_sig             visit_stmt_let,
@@ -33,6 +34,7 @@ visitor_create(void                          *context,
                 .visit_expr_member = visit_expr_member,
                 .visit_expr_deref = visit_expr_deref,
                 .visit_expr_address = visit_expr_address,
+                .visit_expr_array_literal = visit_expr_array_literal,
 
                 .visit_stmt_expr = visit_stmt_expr,
                 .visit_stmt_let = visit_stmt_let,
@@ -115,6 +117,14 @@ accept_expr_address(expr *e, visitor *v)
 {
         if (v->visit_expr_address)
                 return v->visit_expr_address(v, (expr_address *)e);
+        return NULL;
+}
+
+void *
+accept_expr_array_literal(expr *e, visitor *v)
+{
+        if (v->visit_expr_array_literal)
+                return v->visit_expr_array_literal(v, (expr_array_literal *)e);
         return NULL;
 }
 

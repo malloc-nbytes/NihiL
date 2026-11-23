@@ -12,6 +12,7 @@ typedef void *(*visit_expr_struct_literal_sig)(visitor *, expr_struct_literal *)
 typedef void *(*visit_expr_member_sig)(visitor *, expr_member *);
 typedef void *(*visit_expr_deref_sig)(visitor *, expr_deref *);
 typedef void *(*visit_expr_address_sig)(visitor *, expr_address *);
+typedef void *(*visit_expr_array_literal_sig)(visitor *, expr_array_literal *);
 
 typedef void *(*visit_stmt_expr_sig)(visitor *, stmt_expr *);
 typedef void *(*visit_stmt_let_sig)(visitor *, stmt_let *);
@@ -35,6 +36,7 @@ typedef struct visitor {
         visit_expr_member_sig visit_expr_member;
         visit_expr_deref_sig visit_expr_deref;
         visit_expr_address_sig visit_expr_address;
+        visit_expr_array_literal_sig visit_expr_array_literal;
 
         visit_stmt_expr_sig visit_stmt_expr;
         visit_stmt_let_sig visit_stmt_let;
@@ -58,6 +60,7 @@ visitor_create(void                          *context,
                visit_expr_member_sig          visit_expr_member,
                visit_expr_deref_sig           visit_expr_deref,
                visit_expr_address_sig         visit_expr_address,
+               visit_expr_array_literal_sig   visit_expr_array_literal,
 
                visit_stmt_expr_sig            visit_stmt_expr,
                visit_stmt_let_sig             visit_stmt_let,
@@ -78,6 +81,7 @@ void *accept_expr_struct_literal(expr *e, visitor *v);
 void *accept_expr_member(expr *e, visitor *v);
 void *accept_expr_deref(expr *e, visitor *v);
 void *accept_expr_address(expr *e, visitor *v);
+void *accept_expr_array_literal(expr *e, visitor *v);
 
 void *accept_stmt_expr(stmt *s, visitor *v);
 void *accept_stmt_let(stmt *s, visitor *v);

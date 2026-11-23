@@ -24,6 +24,7 @@ typedef enum {
         EXPR_KIND_MEMBER,
         EXPR_KIND_DEREF,
         EXPR_KIND_ADDRESS,
+        EXPR_KIND_ARRAY_LITERAL,
 } expr_kind;
 
 typedef enum {
@@ -106,6 +107,11 @@ typedef struct {
         expr base;
         expr *rhs;
 } expr_address;
+
+typedef struct {
+        expr base;
+        exprp_ar exprs;
+} expr_array_literal;
 
 typedef struct stmt {
         stmt_kind k;
@@ -199,6 +205,7 @@ expr_struct_literal *expr_struct_literal_alloc(const token *for_, struct_literal
 expr_member *expr_member_alloc(expr *lhs, const token *member, arena *a);
 expr_deref *expr_deref_alloc(expr *rhs, location loc, arena *a);
 expr_address *expr_address_alloc(expr *rhs, location loc, arena *a);
+expr_array_literal *expr_array_literal_alloc(exprp_ar exprs, location loc, arena *a);
 
 stmt_expr *stmt_expr_alloc(expr *e, arena *a);
 stmt_let *stmt_let_alloc(const token *id, type *ty, expr *e, location loc, arena *a);
