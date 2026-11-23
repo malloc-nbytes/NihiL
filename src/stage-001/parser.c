@@ -438,12 +438,22 @@ parse_type(parser *p)
 
                 if (!strcmp(lx, TYPE_VOID))
                         base = (type *)type_void_alloc();
+                else if (!strcmp(lx, TYPE_I8))
+                        base = (type *)type_i8_alloc();
+                else if (!strcmp(lx, TYPE_I16))
+                        base = (type *)type_i16_alloc();
                 else if (!strcmp(lx, TYPE_I32))
                         base = (type *)type_i32_alloc();
+                else if (!strcmp(lx, TYPE_I64))
+                        base = (type *)type_i64_alloc();
                 else if (!strcmp(lx, TYPE_U8))
                         base = (type *)type_u8_alloc();
+                else if (!strcmp(lx, TYPE_U16))
+                        base = (type *)type_u16_alloc();
                 else if (!strcmp(lx, TYPE_U32))
                         base = (type *)type_u32_alloc();
+                else if (!strcmp(lx, TYPE_U64))
+                        base = (type *)type_u64_alloc();
                 else
                         fatal("unhandled type");
         }

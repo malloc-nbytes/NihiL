@@ -1,0 +1,10 @@
+#+TITLE: TODO
+
+* [0%] Checklist for self-hosting
+- [ ] casting
+- [ ] global variables
+- [ ] null
+- [ ] compound operators
+- [ ] pointer arithmetic
+- [ ] TAC lowering
+- [ ] ASM gen
