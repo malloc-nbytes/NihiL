@@ -67,3 +67,5 @@ dkms.conf
 /src/main
 /src/parser_test
 /src/semantic_analysis_test
+/src/*/bin
+/src/*/obj
