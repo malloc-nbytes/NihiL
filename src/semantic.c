@@ -27,7 +27,8 @@ static int
 is_valid_lvalue(expr_kind k)
 {
         return k == EXPR_KIND_IDENTIFIER
-                || k == EXPR_KIND_MEMBER;
+                || k == EXPR_KIND_MEMBER
+                || k == EXPR_KIND_DEREF;
 }
 
 static int
@@ -523,8 +524,34 @@ visit_expr_member(visitor *v, expr_member *e)
 static void *
 visit_expr_deref(visitor *v, expr_deref *e)
 {
-        assert(0 && v && e);
-        return NULL;
+        semantic_checker *checker;
+        type *rhs_ty;
+        type_ptr *ptr_ty;
+
+        checker = (semantic_checker *)v->context;
+        rhs_ty = (type *)e->rhs->accept(e->rhs, v);
+
+        if (rhs_ty->k != TYPE_KIND_PTR) {
+                str tystr;
+
+                tystr = type_to_str(rhs_ty);
+
+                array_append(checker->errors,
+                             comperr_from(str_from_fmt("cannot dereference expression of type `%s'",
+                                                       tystr.chars),
+                                          e->base.loc));
+
+                str_destroy(&tystr);
+
+                e->base.ty = (type *)type_void_alloc();
+
+                return (void *)e->base.ty;
+        }
+
+        ptr_ty = (type_ptr *)rhs_ty;
+        e->base.ty = ptr_ty->to;
+
+        return (void *)e->base.ty;
 }
 
 static void *

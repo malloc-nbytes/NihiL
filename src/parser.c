@@ -199,8 +199,19 @@ parse_postfix_expr(parser *p)
 static expr *
 parse_unary_expr(parser *p)
 {
-        // TODO
-        return parse_postfix_expr(p);
+        const token *op;
+        expr *rhs;
+
+        if (lexer_peek(p->l)->k != TOKEN_KIND_ASTERISK)
+                return parse_postfix_expr(p);
+
+        op = lexer_next(p->l);
+
+        if (!(rhs = parse_unary_expr(p)))
+                return NULL;
+
+        return (expr *)expr_deref_alloc(rhs, op->loc, &p->a);
+
 }
 
 static expr *

@@ -21,5 +21,10 @@ export proc _start(): i32
         p.inner.z = p.inner.z + (Inner { .z = 3 }).z;
 
         p.x = 3;
+
+        let ptr: u8**;
+
+        let c: u8 = **ptr;
+
         return p.x + p.y;
 }
