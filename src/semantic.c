@@ -557,8 +557,24 @@ visit_expr_deref(visitor *v, expr_deref *e)
 static void *
 visit_expr_address(visitor *v, expr_address *e)
 {
-        assert(0 && v && e);
-        return NULL;
+        semantic_checker *checker;
+        type *rhs_ty;
+
+        checker = (semantic_checker *)v->context;
+        rhs_ty = (type *)e->rhs->accept(e->rhs, v);
+
+        if (!is_valid_lvalue(e->rhs->k)) {
+                array_append(checker->errors,
+                             comperr_from(str_from("cannot take the address of a non-lvalue expression"),
+                                         e->base.loc));
+
+                e->base.ty = (type *)type_void_alloc();
+                return (void *)e->base.ty;
+        }
+
+        e->base.ty = (type *)type_ptr_alloc(rhs_ty, &checker->a);
+
+        return (void *)e->base.ty;
 }
 
 static void *

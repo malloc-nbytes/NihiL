@@ -202,7 +202,8 @@ parse_unary_expr(parser *p)
         const token *op;
         expr *rhs;
 
-        if (lexer_peek(p->l)->k != TOKEN_KIND_ASTERISK)
+        if (lexer_peek(p->l)->k != TOKEN_KIND_ASTERISK
+            && lexer_peek(p->l)->k != TOKEN_KIND_AMPERSAND)
                 return parse_postfix_expr(p);
 
         op = lexer_next(p->l);
@@ -210,8 +211,10 @@ parse_unary_expr(parser *p)
         if (!(rhs = parse_unary_expr(p)))
                 return NULL;
 
-        return (expr *)expr_deref_alloc(rhs, op->loc, &p->a);
+        if (op->k == TOKEN_KIND_ASTERISK)
+                return (expr *)expr_deref_alloc(rhs, op->loc, &p->a);
 
+        return (expr *)expr_address_alloc(rhs, op->loc, &p->a);
 }
 
 static expr *
