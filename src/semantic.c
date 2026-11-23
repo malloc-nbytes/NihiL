@@ -555,6 +555,13 @@ visit_expr_deref(visitor *v, expr_deref *e)
 }
 
 static void *
+visit_expr_address(visitor *v, expr_address *e)
+{
+        assert(0 && v && e);
+        return NULL;
+}
+
+static void *
 visit_stmt_expr(visitor *v, stmt_expr *s)
 {
         s->e->accept(s->e, v);
@@ -852,6 +859,7 @@ semantic_analysis(MOVE(parser *p))
                            visit_expr_struct_literal,
                            visit_expr_member,
                            visit_expr_deref,
+                           visit_expr_address,
                            visit_stmt_expr,
                            visit_stmt_let,
                            visit_stmt_block,
