@@ -24,9 +24,9 @@ export proc _start(): i32
 
         p.x = 3;
 
-        let ptr: u8**;
+        let ptr: u8*;
 
-        let addr: u8*** = &ptr;
+        let ptr2: u8* = ptr + 1;
 
-        return p.x + p.y;
+        return 0;
 }

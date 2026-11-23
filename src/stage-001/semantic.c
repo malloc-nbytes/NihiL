@@ -250,6 +250,45 @@ visit_expr_binary(visitor *v, expr_binary *e)
         lhs_ty = visit_expr_expected(v, e->lhs, checker->expected_type);
         rhs_ty = visit_expr_expected(v, e->rhs, lhs_ty);
 
+        if (e->op->k == TOKEN_KIND_PLUS
+            || e->op->k == TOKEN_KIND_MINUS) {
+                type_ptr *ptr_ty;
+
+                ptr_ty = NULL;
+
+                if (lhs_ty->k == TYPE_KIND_PTR
+                    && is_integer_type(rhs_ty)) {
+                        ptr_ty = (type_ptr *)lhs_ty;
+                } else if (e->op->k == TOKEN_KIND_PLUS
+                           && is_integer_type(lhs_ty)
+                           && rhs_ty->k == TYPE_KIND_PTR) {
+                        ptr_ty = (type_ptr *)rhs_ty;
+                } else if (lhs_ty->k == TYPE_KIND_PTR
+                           || rhs_ty->k == TYPE_KIND_PTR) {
+                        array_append(checker->errors,
+                                     comperr_from(str_from_fmt("operator `%s' requires a pointer and an integer operand",
+                                                               sv_view(e->op->lx)),
+                                                  e->base.loc));
+
+                        e->base.ty = (type *)type_void_alloc();
+                        return (void *)e->base.ty;
+                }
+
+                if (ptr_ty) {
+                        if (ptr_ty->to->k == TYPE_KIND_VOID) {
+                                array_append(checker->errors,
+                                             comperr_from(str_from("pointer arithmetic on `void*' is not supported"),
+                                                          e->base.loc));
+
+                                e->base.ty = (type *)type_void_alloc();
+                                return (void *)e->base.ty;
+                        }
+
+                        e->base.ty = (type *)ptr_ty;
+                        return (void *)e->base.ty;
+                }
+        }
+
         if (!type_implements_operator(lhs_ty, e->op->k)) {
                 str tystr = type_to_str(lhs_ty);
                 array_append(checker->errors,

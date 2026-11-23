@@ -260,8 +260,7 @@ type_implements_operator(const type *const ty,
             || k == TOKEN_KIND_ASTERISK || k == TOKEN_KIND_ASTERISK_EQUALS
             || k == TOKEN_KIND_FSLASH   || k == TOKEN_KIND_FSLASH_EQUALS
             || k == TOKEN_KIND_PERCENT  || k == TOKEN_KIND_PERCENT_EQUALS) {
-                return ty->k < __TYPE_INTEGERS
-                        || ty->k == TYPE_KIND_PTR;
+                return ty->k < __TYPE_INTEGERS;
         }
 
         if (k == TOKEN_KIND_EQUALS)
