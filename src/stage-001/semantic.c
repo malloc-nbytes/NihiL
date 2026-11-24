@@ -801,6 +801,13 @@ visit_expr_cast(visitor *v, expr_cast *e)
 }
 
 static void *
+visit_expr_null(visitor *v, expr_null *e)
+{
+        assert(0 && v && e);
+        return NULL;
+}
+
+static void *
 visit_stmt_expr(visitor *v, stmt_expr *s)
 {
         s->e->accept(s->e, v);
@@ -1102,6 +1109,7 @@ semantic_analysis(MOVE(parser *p))
                            visit_expr_array_literal,
                            visit_expr_index,
                            visit_expr_cast,
+                           visit_expr_null,
                            visit_stmt_expr,
                            visit_stmt_let,
                            visit_stmt_block,

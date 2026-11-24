@@ -212,6 +212,20 @@ expr_cast_alloc(type     *to,
         return e;
 }
 
+expr_null *
+expr_null_alloc(location loc, arena *a)
+{
+        expr_null *e;
+
+        e = (expr_null *)arena_alloc(a, sizeof(*e));
+        e->base.k = EXPR_KIND_NULL;
+        e->base.loc = loc;
+        e->base.ty = NULL;
+        e->base.accept = accept_expr_null;
+
+        return e;
+}
+
 stmt_expr *
 stmt_expr_alloc(expr *e, arena *a)
 {
