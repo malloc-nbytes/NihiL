@@ -803,8 +803,22 @@ visit_expr_cast(visitor *v, expr_cast *e)
 static void *
 visit_expr_null(visitor *v, expr_null *e)
 {
-        assert(0 && v && e);
-        return NULL;
+        semantic_checker *checker;
+
+        checker = (semantic_checker *)v->context;
+
+        if (!checker->expected_type
+            || checker->expected_type->k != TYPE_KIND_PTR) {
+                array_append(checker->errors,
+                             comperr_from(str_from("`null' requires a pointer type context"),
+                                          e->base.loc));
+                e->base.ty = (type *)type_void_alloc();
+                return (void *)e->base.ty;
+        }
+
+        e->base.ty = checker->expected_type;
+
+        return (void *)e->base.ty;
 }
 
 static void *

@@ -199,6 +199,10 @@ parse_primary_expr(parser *p)
         case TOKEN_KIND_KEYWORD:
                 if (!strcmp(sv_view(hd->lx), KEYWORD_CAST))
                         return (expr *)parse_cast_expr(p);
+                else if (!strcmp(sv_view(hd->lx), KEYWORD_NULL)) {
+                        lexer_discard(p->l); // null
+                        return (expr *)expr_null_alloc(hd->loc, &p->a);
+                }
                 else
                         return NULL;
         default:
