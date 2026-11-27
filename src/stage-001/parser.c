@@ -430,7 +430,12 @@ parse_assignment_expr(parser *p)
         lhs = parse_logical_expr(p);
 
         cur = lexer_peek(p->l);
-        if (cur->k == TOKEN_KIND_EQUALS) {
+        if (cur->k == TOKEN_KIND_EQUALS
+                || cur->k == TOKEN_KIND_PLUS_EQUALS
+                || cur->k == TOKEN_KIND_MINUS_EQUALS
+                || cur->k == TOKEN_KIND_ASTERISK_EQUALS
+                || cur->k == TOKEN_KIND_FSLASH_EQUALS
+                || cur->k == TOKEN_KIND_PERCENT_EQUALS) {
                 token *op;
                 expr *rhs;
 

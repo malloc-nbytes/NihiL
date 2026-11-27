@@ -261,7 +261,9 @@ visit_expr_binary(visitor *v, expr_binary *e)
         rhs_ty = visit_expr_expected(v, e->rhs, lhs_ty);
 
         if (e->op->k == TOKEN_KIND_PLUS
-            || e->op->k == TOKEN_KIND_MINUS) {
+            || e->op->k == TOKEN_KIND_MINUS
+            || e->op->k == TOKEN_KIND_PLUS_EQUALS
+            || e->op->k == TOKEN_KIND_MINUS_EQUALS) {
                 type_ptr *ptr_ty;
 
                 ptr_ty = NULL;
@@ -282,6 +284,14 @@ visit_expr_binary(visitor *v, expr_binary *e)
 
                         e->base.ty = (type *)type_void_alloc();
                         return (void *)e->base.ty;
+                }
+
+                if ((e->op->k == TOKEN_KIND_PLUS_EQUALS
+                        || e->op->k == TOKEN_KIND_MINUS_EQUALS)
+                    && !is_valid_lvalue(e->lhs->k)) {
+                        array_append(checker->errors,
+                                     comperr_from(str_from("performing an assignment on an invalid lvalue"),
+                                                  e->lhs->loc));
                 }
 
                 if (ptr_ty) {

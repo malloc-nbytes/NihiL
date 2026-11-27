@@ -31,5 +31,9 @@ export proc _start(): i32
         let one: u8 = 1;
         let two: i32 = cast<i32>(one);
 
+        let x: i32 = 0;
+        x += 1;
+        x *= one;
+
         return 0;
 }
